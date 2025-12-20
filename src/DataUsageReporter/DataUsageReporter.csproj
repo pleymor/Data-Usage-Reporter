@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationIcon>Resources\app.ico</ApplicationIcon>
+
+    <!-- Single file deployment (publish only) -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+
+    <!-- Size optimization - disabled for WinForms compatibility -->
+    <!-- Trimming causes issues with WinForms, use ReadyToRun instead -->
+    <PublishReadyToRun>true</PublishReadyToRun>
+
+    <!-- Application info -->
+    <AssemblyName>DataUsageReporter</AssemblyName>
+    <RootNamespace>DataUsageReporter</RootNamespace>
+    <Version>1.0.0</Version>
+    <Company>DataUsageReporter</Company>
+    <Product>Data Usage Reporter</Product>
+    <Description>Network usage monitoring application for Windows</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DnsClient" Version="1.8.0" />
+    <PackageReference Include="MailKit" Version="4.14.1" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.1" />
+    <PackageReference Include="ScottPlot.WinForms" Version="5.1.57" />
+    <PackageReference Include="Vanara.PInvoke.IpHlpApi" Version="4.2.1" />
+  </ItemGroup>
+
+</Project>
