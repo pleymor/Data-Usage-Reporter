@@ -7,6 +7,8 @@ Auto-generated from all feature plans. Last updated: 2025-12-20
 - N/A (static content, no persistence needed) (002-credits-tab)
 - C# .NET 8.0 + WinForms, Vanara.PInvoke.IpHlpApi, Microsoft.Data.Sqlite, ScottPlot (003-filter-spike-values)
 - SQLite (usage.db in AppData) (003-filter-spike-values)
+- C# / .NET 8.0 + ScottPlot.WinForms 5.1.57, Windows Forms (005-unified-graph)
+- SQLite (via Microsoft.Data.Sqlite) for usage data (005-unified-graph)
 
 - C# .NET 8.0 with WinForms (001-network-usage-monitor)
 
@@ -26,10 +28,10 @@ tests/
 C# .NET 8.0 with WinForms: Follow standard conventions
 
 ## Recent Changes
+- 005-unified-graph: Added C# / .NET 8.0 + ScottPlot.WinForms 5.1.57, Windows Forms
 - 003-filter-spike-values: Added C# .NET 8.0 + WinForms, Vanara.PInvoke.IpHlpApi, Microsoft.Data.Sqlite, ScottPlot
 - 002-credits-tab: Added C# .NET 8.0 + WinForms (existing), System.Reflection (for version info)
 
-- 001-network-usage-monitor: Added C# .NET 8.0 with WinForms
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

@@ -5,15 +5,24 @@ using ScottPlot.WinForms;
 namespace DataUsageReporter.UI;
 
 /// <summary>
-/// Panel displaying network usage graphs with ScottPlot.
+/// Panel displaying network usage as a unified graph with ScottPlot.
 /// </summary>
+/// <remarks>
+/// Design Decision: This component uses a SINGLE unified graph to display both
+/// download and upload data together, showing ALL historical data without
+/// time range selection. This approach was chosen to:
+/// - Simplify the user experience by removing dropdown complexity
+/// - Show complete usage history in one view
+/// - Enable easy comparison between download and upload at any point in time
+/// - Use distinct colors (green for download, orange for upload) for clarity
+///
+/// See specs/005-unified-graph/spec.md for the full specification.
+/// </remarks>
 public class GraphPanel : UserControl
 {
     private readonly FormsPlot _plot;
-    private readonly ComboBox _granularitySelector;
     private readonly IUsageAggregator _aggregator;
     private readonly ISpeedFormatter _formatter;
-    private TimeGranularity _currentGranularity = TimeGranularity.Minute;
 
     public GraphPanel(IUsageAggregator aggregator, ISpeedFormatter formatter)
     {
@@ -23,25 +32,7 @@ public class GraphPanel : UserControl
         // Setup layout
         Dock = DockStyle.Fill;
 
-        // Create granularity selector
-        _granularitySelector = new ComboBox
-        {
-            Dock = DockStyle.Top,
-            DropDownStyle = ComboBoxStyle.DropDownList,
-            Height = 25
-        };
-        _granularitySelector.Items.AddRange(new object[]
-        {
-            "Last 60 Minutes",
-            "Last 24 Hours",
-            "Last 30 Days",
-            "Last 12 Months",
-            "Last 5 Years"
-        });
-        _granularitySelector.SelectedIndex = 0; // Default to last 60 minutes
-        _granularitySelector.SelectedIndexChanged += OnGranularityChanged;
-
-        // Create plot
+        // Create plot (no dropdown - shows all data)
         _plot = new FormsPlot
         {
             Dock = DockStyle.Fill
@@ -49,7 +40,6 @@ public class GraphPanel : UserControl
 
         // Add controls
         Controls.Add(_plot);
-        Controls.Add(_granularitySelector);
     }
 
     protected override void OnLoad(EventArgs e)
@@ -58,41 +48,16 @@ public class GraphPanel : UserControl
         _ = RefreshDataAsync();
     }
 
-    private void OnGranularityChanged(object? sender, EventArgs e)
-    {
-        _currentGranularity = _granularitySelector.SelectedIndex switch
-        {
-            0 => TimeGranularity.Minute,
-            1 => TimeGranularity.Hour,
-            2 => TimeGranularity.Day,
-            3 => TimeGranularity.Month,
-            4 => TimeGranularity.Year,
-            _ => TimeGranularity.Hour
-        };
-
-        _ = RefreshDataAsync();
-    }
-
     public async Task RefreshDataAsync()
     {
-        var (from, to) = GetDateRange(_currentGranularity);
-        var dataPoints = await _aggregator.GetDataPointsAsync(from, to, _currentGranularity);
+        // Fetch all data (up to 5 years back covers all retained data)
+        var from = DateTime.Now.AddYears(-5);
+        var to = DateTime.Now;
+
+        // Use Minute granularity for finest detail
+        var dataPoints = await _aggregator.GetDataPointsAsync(from, to, TimeGranularity.Minute);
 
         UpdatePlot(dataPoints);
-    }
-
-    private static (DateTime from, DateTime to) GetDateRange(TimeGranularity granularity)
-    {
-        var now = DateTime.Now;
-        return granularity switch
-        {
-            TimeGranularity.Minute => (now.AddMinutes(-60), now),
-            TimeGranularity.Hour => (now.AddHours(-24), now),
-            TimeGranularity.Day => (now.AddDays(-30), now),
-            TimeGranularity.Month => (now.AddMonths(-12), now),
-            TimeGranularity.Year => (now.AddYears(-5), now),
-            _ => (now.AddHours(-24), now)
-        };
     }
 
     private void UpdatePlot(IReadOnlyList<UsageDataPoint> dataPoints)
@@ -130,22 +95,9 @@ public class GraphPanel : UserControl
         // Format Y axis label
         _plot.Plot.Axes.Left.Label.Text = "Mbps";
         _plot.Plot.Axes.Bottom.Label.Text = "Time";
-        _plot.Plot.Title($"Network Usage - {GetGranularityLabel(_currentGranularity)}");
+        _plot.Plot.Title("Network Usage");
         _plot.Plot.ShowLegend(Alignment.UpperRight);
 
         _plot.Refresh();
-    }
-
-    private static string GetGranularityLabel(TimeGranularity granularity)
-    {
-        return granularity switch
-        {
-            TimeGranularity.Minute => "By Minute",
-            TimeGranularity.Hour => "By Hour",
-            TimeGranularity.Day => "By Day",
-            TimeGranularity.Month => "By Month",
-            TimeGranularity.Year => "By Year",
-            _ => "Unknown"
-        };
     }
 }
