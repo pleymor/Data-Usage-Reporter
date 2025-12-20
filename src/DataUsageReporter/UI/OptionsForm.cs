@@ -17,6 +17,7 @@ public class OptionsForm : Form
     private readonly IEmailSender? _emailSender;
     private readonly StartupManager _startupManager;
     private readonly IUsageRepository? _usageRepository;
+    private readonly IUsageAggregator _usageAggregator;
     private readonly ISpeedFormatter _speedFormatter;
     private readonly IReportScheduler? _reportScheduler;
 
@@ -68,6 +69,7 @@ public class OptionsForm : Form
         _emailSender = emailSender;
         _startupManager = new StartupManager();
         _usageRepository = usageRepository;
+        _usageAggregator = aggregator;
         _speedFormatter = formatter;
         _reportScheduler = reportScheduler;
 
@@ -567,7 +569,7 @@ public class OptionsForm : Form
                 return;
             }
 
-            var reportGenerator = new ReportGenerator(_usageRepository, _speedFormatter);
+            var reportGenerator = new ReportGenerator(_usageRepository, _usageAggregator, _speedFormatter);
             var now = DateTime.Now;
             var todayStart = now.Date; // Midnight today
             var report = await reportGenerator.GenerateReportAsync(todayStart, now, ReportFrequency.Daily);

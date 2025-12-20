@@ -22,4 +22,9 @@ public interface IUsageAggregator
         DateTime to,
         TimeGranularity granularity
     );
+
+    /// <summary>
+    /// Gets filtered peak speeds for a period, excluding spike values.
+    /// </summary>
+    Task<(long PeakDownload, long PeakUpload)> GetFilteredPeakSpeedsAsync(DateTime from, DateTime to);
 }

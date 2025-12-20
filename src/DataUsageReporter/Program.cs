@@ -77,7 +77,7 @@ static class Program
             if (emailConfig != null && !string.IsNullOrEmpty(emailConfig.RecipientEmail))
             {
                 _emailSender = new EmailSender(emailConfig, _credentialManager);
-                var reportGenerator = new ReportGenerator(_usageRepository, _speedFormatter);
+                var reportGenerator = new ReportGenerator(_usageRepository, _usageAggregator!, _speedFormatter);
                 _reportScheduler = new Scheduler(_settingsRepository, reportGenerator, _emailSender);
                 _reportScheduler.ReportCompleted += OnReportCompleted;
                 _reportScheduler.Start();

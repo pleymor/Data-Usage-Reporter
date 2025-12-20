@@ -10,11 +10,13 @@ namespace DataUsageReporter.Email;
 public class ReportGenerator : IReportGenerator
 {
     private readonly IUsageRepository _repository;
+    private readonly IUsageAggregator _usageAggregator;
     private readonly ISpeedFormatter _formatter;
 
-    public ReportGenerator(IUsageRepository repository, ISpeedFormatter formatter)
+    public ReportGenerator(IUsageRepository repository, IUsageAggregator usageAggregator, ISpeedFormatter formatter)
     {
         _repository = repository;
+        _usageAggregator = usageAggregator;
         _formatter = formatter;
     }
 
@@ -30,6 +32,22 @@ public class ReportGenerator : IReportGenerator
         if (totalUsage == null || (totalUsage.TotalDownload == 0 && totalUsage.TotalUpload == 0))
         {
             totalUsage = await _repository.CalculateUsageFromRecordsAsync(periodStart, periodEnd);
+        }
+
+        // Use centralized filtered peak speeds from UsageAggregator (same logic as graphs)
+        if (totalUsage != null && summaries.Count > 0)
+        {
+            var filteredPeaks = await _usageAggregator.GetFilteredPeakSpeedsAsync(periodStart, periodEnd);
+            totalUsage = new Data.Models.UsageSummary
+            {
+                PeriodStart = totalUsage.PeriodStart,
+                PeriodEnd = totalUsage.PeriodEnd,
+                TotalDownload = totalUsage.TotalDownload,
+                TotalUpload = totalUsage.TotalUpload,
+                PeakDownloadSpeed = filteredPeaks.PeakDownload,
+                PeakUploadSpeed = filteredPeaks.PeakUpload,
+                SampleCount = totalUsage.SampleCount
+            };
         }
 
         // Format date range - single day vs range
