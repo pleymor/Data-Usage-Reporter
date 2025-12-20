@@ -1,3 +1,4 @@
+using System.Reflection;
 using DataUsageReporter.Core;
 using DataUsageReporter.Data;
 using DataUsageReporter.Email;
@@ -105,6 +106,11 @@ public class OptionsForm : Form
         var scheduleTab = new TabPage("Schedule");
         scheduleTab.Controls.Add(CreateSchedulePanel());
         _tabControl.TabPages.Add(scheduleTab);
+
+        // About tab
+        var aboutTab = new TabPage("About");
+        aboutTab.Controls.Add(CreateAboutPanel());
+        _tabControl.TabPages.Add(aboutTab);
 
         Controls.Add(_tabControl);
 
@@ -667,6 +673,115 @@ public class OptionsForm : Form
             var nextRun = DateTimeOffset.FromUnixTimeSeconds(schedule.NextRunTime).LocalDateTime;
             _nextRunLabel!.Text = nextRun.ToString("g");
         }
+    }
+
+    private Panel CreateAboutPanel()
+    {
+        var panel = new Panel
+        {
+            Dock = DockStyle.Fill,
+            AutoScroll = true,
+            Padding = new Padding(20)
+        };
+
+        var layout = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            FlowDirection = FlowDirection.TopDown,
+            AutoSize = true,
+            WrapContents = false,
+            Padding = new Padding(10)
+        };
+
+        // Application name
+        var appNameLabel = new Label
+        {
+            Text = "Data Usage Reporter",
+            Font = new Font(Font.FontFamily, 16, FontStyle.Bold),
+            AutoSize = true,
+            Padding = new Padding(0, 0, 0, 5)
+        };
+        layout.Controls.Add(appNameLabel);
+
+        // Version
+        var versionLabel = new Label
+        {
+            Text = "Version 1.0.0",
+            AutoSize = true,
+            Padding = new Padding(0, 0, 0, 5)
+        };
+        layout.Controls.Add(versionLabel);
+
+        // Date
+        var dateLabel = new Label
+        {
+            Text = "December 2025",
+            AutoSize = true,
+            ForeColor = Color.Gray,
+            Padding = new Padding(0, 0, 0, 15)
+        };
+        layout.Controls.Add(dateLabel);
+
+        // Developer
+        var developerLabel = new Label
+        {
+            Text = "Developed by Adrien Laugueux",
+            AutoSize = true,
+            Padding = new Padding(0, 0, 0, 20)
+        };
+        layout.Controls.Add(developerLabel);
+
+        // Third-party libraries header
+        var librariesHeader = new Label
+        {
+            Text = "Third-Party Libraries",
+            Font = new Font(Font.FontFamily, 11, FontStyle.Bold),
+            AutoSize = true,
+            Padding = new Padding(0, 0, 0, 10)
+        };
+        layout.Controls.Add(librariesHeader);
+
+        // Library credits
+        var libraries = new[]
+        {
+            ("MailKit", "MIT License"),
+            ("DnsClient", "Apache 2.0"),
+            ("ScottPlot", "MIT License"),
+            ("Microsoft.Data.Sqlite", "MIT License"),
+            ("Vanara.PInvoke.IpHlpApi", "MIT License")
+        };
+
+        foreach (var (name, license) in libraries)
+        {
+            var libraryPanel = new FlowLayoutPanel
+            {
+                FlowDirection = FlowDirection.TopDown,
+                AutoSize = true,
+                WrapContents = false,
+                Padding = new Padding(0, 0, 0, 8)
+            };
+
+            var nameLabel = new Label
+            {
+                Text = $"\u2022 {name}",
+                AutoSize = true,
+                Font = new Font(Font.FontFamily, 9, FontStyle.Bold)
+            };
+            libraryPanel.Controls.Add(nameLabel);
+
+            var licenseLabel = new Label
+            {
+                Text = $"   {license}",
+                AutoSize = true,
+                ForeColor = Color.Gray
+            };
+            libraryPanel.Controls.Add(licenseLabel);
+
+            layout.Controls.Add(libraryPanel);
+        }
+
+        panel.Controls.Add(layout);
+        return panel;
     }
 
     protected override void OnFormClosing(FormClosingEventArgs e)
