@@ -269,4 +269,66 @@ public class UsageRepository : IUsageRepository
             SampleCount = records.Count
         };
     }
+
+    /// <summary>
+    /// Seeds test data for the past N weeks. For testing purposes only.
+    /// </summary>
+    public async Task SeedTestDataAsync(int weeks = 10)
+    {
+        var random = new Random(42); // Fixed seed for reproducible data
+        var now = DateTime.Now;
+        var startDate = now.AddDays(-weeks * 7);
+
+        // Start from the beginning of that hour
+        var currentHour = new DateTime(startDate.Year, startDate.Month, startDate.Day, startDate.Hour, 0, 0);
+        var endHour = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0);
+
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync();
+
+        while (currentHour < endHour)
+        {
+            var periodStart = new DateTimeOffset(currentHour.ToUniversalTime()).ToUnixTimeSeconds();
+            var periodEnd = new DateTimeOffset(currentHour.AddHours(1).ToUniversalTime()).ToUnixTimeSeconds();
+
+            // Generate realistic usage data
+            // Base usage varies by hour of day (more during day, less at night)
+            var hourOfDay = currentHour.Hour;
+            var dayMultiplier = hourOfDay >= 8 && hourOfDay <= 22 ? 1.0 : 0.3; // Less usage at night
+            var weekendMultiplier = currentHour.DayOfWeek == DayOfWeek.Saturday || currentHour.DayOfWeek == DayOfWeek.Sunday ? 1.5 : 1.0;
+
+            // Random variation
+            var variation = 0.5 + random.NextDouble(); // 0.5 to 1.5
+
+            // Base: ~100 MB/hour download, ~20 MB/hour upload
+            var baseDownload = 100_000_000L; // 100 MB
+            var baseUpload = 20_000_000L;    // 20 MB
+
+            var totalDownload = (long)(baseDownload * dayMultiplier * weekendMultiplier * variation);
+            var totalUpload = (long)(baseUpload * dayMultiplier * weekendMultiplier * variation * 0.8);
+
+            // Peak speeds (bytes/sec) - up to 50 Mbps download, 10 Mbps upload
+            var peakDownloadSpeed = (long)(random.NextDouble() * 6_250_000); // Up to 50 Mbps
+            var peakUploadSpeed = (long)(random.NextDouble() * 1_250_000);   // Up to 10 Mbps
+
+            await using var command = connection.CreateCommand();
+            command.CommandText = @"
+                INSERT OR IGNORE INTO usage_summaries
+                (period_start, period_end, total_download, total_upload,
+                 peak_download_speed, peak_upload_speed, sample_count)
+                VALUES (@periodStart, @periodEnd, @totalDownload, @totalUpload,
+                        @peakDownloadSpeed, @peakUploadSpeed, @sampleCount)";
+            command.Parameters.AddWithValue("@periodStart", periodStart);
+            command.Parameters.AddWithValue("@periodEnd", periodEnd);
+            command.Parameters.AddWithValue("@totalDownload", totalDownload);
+            command.Parameters.AddWithValue("@totalUpload", totalUpload);
+            command.Parameters.AddWithValue("@peakDownloadSpeed", peakDownloadSpeed);
+            command.Parameters.AddWithValue("@peakUploadSpeed", peakUploadSpeed);
+            command.Parameters.AddWithValue("@sampleCount", 3600); // 1 sample per second
+
+            await command.ExecuteNonQueryAsync();
+
+            currentHour = currentHour.AddHours(1);
+        }
+    }
 }

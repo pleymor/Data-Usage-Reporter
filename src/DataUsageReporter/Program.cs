@@ -134,6 +134,16 @@ static class Program
 
     private static void SetupAggregationTimer()
     {
+        // First, catch up on any missed aggregations from when the app wasn't running
+        try
+        {
+            CatchUpAggregationAsync().GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"CatchUp failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
         // Calculate time until next hour
         var now = DateTime.Now;
         var nextHour = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0).AddHours(1);
@@ -145,6 +155,42 @@ static class Program
         };
         _aggregationTimer.Tick += OnAggregationTick;
         _aggregationTimer.Start();
+    }
+
+    private static async Task CatchUpAggregationAsync()
+    {
+        if (_usageAggregator == null || _usageRepository == null)
+            return;
+
+        try
+        {
+            // Get all raw records to find the starting point
+            var records = await _usageRepository.GetRecordsSinceAsync(DateTime.Now.AddYears(-5));
+            if (records.Count == 0)
+                return;
+
+            var earliestRecord = records.Min(r => r.GetDateTime());
+            var now = DateTime.Now;
+
+            // Start from the hour of the earliest record
+            var hourToAggregate = new DateTime(earliestRecord.Year, earliestRecord.Month, earliestRecord.Day, earliestRecord.Hour, 0, 0);
+            var currentHour = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0);
+
+            // Aggregate each hour up to (but not including) the current hour
+            while (hourToAggregate < currentHour)
+            {
+                var summary = await _usageAggregator.AggregateHourAsync(hourToAggregate);
+                if (summary != null)
+                {
+                    await _usageRepository.SaveSummaryAsync(summary);
+                }
+                hourToAggregate = hourToAggregate.AddHours(1);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"CatchUp aggregation error: {ex.Message}");
+        }
     }
 
     private static void OnMonitorTick(object? sender, EventArgs e)

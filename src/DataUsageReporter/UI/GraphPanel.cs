@@ -63,8 +63,8 @@ public class GraphPanel : UserControl
         var from = DateTime.Now.AddYears(-5);
         var to = DateTime.Now;
 
-        // Use Minute granularity for finest detail
-        var dataPoints = await _aggregator.GetDataPointsAsync(from, to, TimeGranularity.Minute);
+        // Use Hour granularity to show all historical data from usage_summaries
+        var dataPoints = await _aggregator.GetDataPointsAsync(from, to, TimeGranularity.Hour);
 
         UpdatePlot(dataPoints);
     }
