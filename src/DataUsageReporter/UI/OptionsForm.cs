@@ -39,6 +39,7 @@ public class OptionsForm : Form
     private TextBox? _recipientEmailTextBox;
     private TextBox? _usernameTextBox;
     private TextBox? _passwordTextBox;
+    private TextBox? _customSubjectTextBox;
     private Button? _testConnectionButton;
     private Button? _sendNowButton;
     private Label? _testResultLabel;
@@ -356,6 +357,14 @@ public class OptionsForm : Form
         _passwordTextBox = new TextBox { Width = 300, UseSystemPasswordChar = true };
         layout.Controls.Add(_passwordTextBox, 1, row++);
 
+        // Custom Subject
+        layout.Controls.Add(new Label { Text = _localization.GetString("Email_CustomSubject") + ":", AutoSize = true }, 0, row);
+        var subjectPanel = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.LeftToRight, WrapContents = false };
+        _customSubjectTextBox = new TextBox { Width = 250 };
+        subjectPanel.Controls.Add(_customSubjectTextBox);
+        subjectPanel.Controls.Add(new Label { Text = _localization.GetString("Email_CustomSubjectHint"), AutoSize = true, ForeColor = Color.Gray, Padding = new Padding(5, 3, 0, 0) });
+        layout.Controls.Add(subjectPanel, 1, row++);
+
         // Buttons panel
         var buttonsPanel = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.LeftToRight };
 
@@ -523,6 +532,8 @@ public class OptionsForm : Form
                 _usernameTextBox!.Text = credentials.Value.Username;
                 // Don't populate password for security
             }
+
+            _customSubjectTextBox!.Text = config.CustomSubject ?? string.Empty;
         }
     }
 
@@ -647,7 +658,7 @@ public class OptionsForm : Form
             var reportGenerator = new ReportGenerator(_usageRepository, _usageAggregator, _speedFormatter, _localization);
             var now = DateTime.Now;
             var todayStart = now.Date; // Midnight today
-            var report = await reportGenerator.GenerateReportAsync(todayStart, now, ReportFrequency.Daily);
+            var report = await reportGenerator.GenerateReportAsync(todayStart, now, ReportFrequency.Daily, config.CustomSubject);
 
             _testResultLabel.Text = _localization.GetString("Email_SendingEmail");
 
@@ -701,7 +712,8 @@ public class OptionsForm : Form
             SmtpPort = (int)_smtpPortInput!.Value,
             UseSsl = _useSslCheckBox!.Checked,
             SenderEmail = _senderEmailTextBox!.Text,
-            RecipientEmail = _recipientEmailTextBox!.Text
+            RecipientEmail = _recipientEmailTextBox!.Text,
+            CustomSubject = string.IsNullOrWhiteSpace(_customSubjectTextBox!.Text) ? null : _customSubjectTextBox.Text
         };
 
         _settingsRepository.SaveEmailConfig(config);

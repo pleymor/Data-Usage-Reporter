@@ -37,6 +37,14 @@ public interface ILocalizationService
     string GetString(string key, params object[] args);
 
     /// <summary>
+    /// Formats a date according to the current culture.
+    /// </summary>
+    /// <param name="date">Date to format</param>
+    /// <param name="format">Format string (culture-aware)</param>
+    /// <returns>Formatted date string</returns>
+    string FormatDate(DateTime date, string format);
+
+    /// <summary>
     /// Raised when the language changes.
     /// </summary>
     event EventHandler<LanguageChangedEventArgs>? LanguageChanged;

@@ -95,10 +95,11 @@ public class Scheduler : IReportScheduler
             return;
 
         var (periodStart, periodEnd) = GetReportPeriod(_schedule.Frequency);
+        var emailConfig = _settingsRepository.LoadEmailConfig();
 
         try
         {
-            var report = await _reportGenerator.GenerateReportAsync(periodStart, periodEnd, _schedule.Frequency);
+            var report = await _reportGenerator.GenerateReportAsync(periodStart, periodEnd, _schedule.Frequency, emailConfig?.CustomSubject);
             var success = await _emailSender.SendAsync(report);
 
             if (success)

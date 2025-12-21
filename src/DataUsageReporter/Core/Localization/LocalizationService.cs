@@ -81,6 +81,11 @@ public class LocalizationService : ILocalizationService
         }
     }
 
+    public string FormatDate(DateTime date, string format)
+    {
+        return date.ToString(format, _currentCulture);
+    }
+
     /// <summary>
     /// Detects the operating system's UI language.
     /// </summary>

@@ -30,7 +30,8 @@ public class ReportGenerator : IReportGenerator
     public async Task<EmailMessage> GenerateReportAsync(
         DateTime periodStart,
         DateTime periodEnd,
-        ReportFrequency frequency)
+        ReportFrequency frequency,
+        string? customSubject = null)
     {
         var summaries = await _repository.GetSummariesAsync(periodStart, periodEnd);
         var totalUsage = await _repository.GetTotalUsageAsync(periodStart, periodEnd);
@@ -62,7 +63,9 @@ public class ReportGenerator : IReportGenerator
             ? $"{periodStart:d}"
             : $"{periodStart:d} - {periodEnd:d}";
 
-        var subject = _localization.GetString("Email_Subject", DateTime.Now);
+        var subject = !string.IsNullOrWhiteSpace(customSubject)
+            ? customSubject
+            : _localization.GetString("Email_Subject", DateTime.Now);
         var htmlBody = GenerateHtmlReport(summaries, totalUsage, periodStart, periodEnd, frequency);
         var plainTextBody = GeneratePlainTextReport(summaries, totalUsage, periodStart, periodEnd, frequency);
 
@@ -96,12 +99,12 @@ public class ReportGenerator : IReportGenerator
         sb.AppendLine(".footer { color: #999; font-size: 12px; margin-top: 20px; text-align: center; }");
         sb.AppendLine("</style></head><body>");
 
-        // Format date range for display
+        // Format date range for display (culture-aware)
         var dateDisplay = periodStart.Date == periodEnd.Date || periodEnd.Date == periodStart.Date.AddDays(1)
-            ? $"{periodStart:MMMM d, yyyy}"
-            : $"{periodStart:MMMM d, yyyy} - {periodEnd:MMMM d, yyyy}";
+            ? _localization.FormatDate(periodStart, "d MMMM yyyy")
+            : $"{_localization.FormatDate(periodStart, "d MMMM yyyy")} - {_localization.FormatDate(periodEnd, "d MMMM yyyy")}";
 
-        sb.AppendLine($"<h1>{_localization.GetString("Graph_Title")}</h1>");
+        sb.AppendLine($"<h1>{_localization.GetString("Email_ReportTitle", dateDisplay)}</h1>");
         sb.AppendLine($"<p>{_localization.GetString("Email_Greeting")}</p>");
         sb.AppendLine($"<p>{_localization.GetString("Email_Summary")}</p>");
 
@@ -165,13 +168,13 @@ public class ReportGenerator : IReportGenerator
     {
         var sb = new StringBuilder();
 
-        // Format date range for display
+        // Format date range for display (culture-aware)
         var dateDisplay = periodStart.Date == periodEnd.Date || periodEnd.Date == periodStart.Date.AddDays(1)
-            ? $"{periodStart:d}"
-            : $"{periodStart:d} - {periodEnd:d}";
+            ? _localization.FormatDate(periodStart, "d MMMM yyyy")
+            : $"{_localization.FormatDate(periodStart, "d MMMM yyyy")} - {_localization.FormatDate(periodEnd, "d MMMM yyyy")}";
 
-        sb.AppendLine(_localization.GetString("Graph_Title").ToUpperInvariant());
-        sb.AppendLine("====================");
+        sb.AppendLine(_localization.GetString("Email_ReportTitle", dateDisplay).ToUpperInvariant());
+        sb.AppendLine("========================================");
         sb.AppendLine(_localization.GetString("Email_Greeting"));
         sb.AppendLine(_localization.GetString("Email_Summary"));
         sb.AppendLine();

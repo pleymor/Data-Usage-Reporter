@@ -300,4 +300,13 @@
   <data name="Schedule_Saved" xml:space="preserve">
     <value>Planification enregistrée.</value>
   </data>
+  <data name="Email_CustomSubject" xml:space="preserve">
+    <value>Objet personnalisé</value>
+  </data>
+  <data name="Email_CustomSubjectHint" xml:space="preserve">
+    <value>(laisser vide pour défaut)</value>
+  </data>
+  <data name="Email_ReportTitle" xml:space="preserve">
+    <value>Rapport d'utilisation réseau - {0}</value>
+  </data>
 </root>

@@ -13,6 +13,7 @@ public interface IReportGenerator
     Task<EmailMessage> GenerateReportAsync(
         DateTime periodStart,
         DateTime periodEnd,
-        ReportFrequency frequency
+        ReportFrequency frequency,
+        string? customSubject = null
     );
 }

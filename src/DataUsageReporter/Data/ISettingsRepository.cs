@@ -41,6 +41,7 @@ public class EmailConfig
     public string SenderEmail { get; set; } = string.Empty;
     public string RecipientEmail { get; set; } = string.Empty;
     public string CredentialKey { get; set; } = "DataUsageReporter:SMTP";
+    public string? CustomSubject { get; set; }
 }
 
 /// <summary>
