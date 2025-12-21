@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+
+  <!-- Tab Names -->
+  <data name="Tab_Usage" xml:space="preserve">
+    <value>Usage</value>
+  </data>
+  <data name="Tab_Graph" xml:space="preserve">
+    <value>Usage Graph</value>
+  </data>
+  <data name="Tab_Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Tab_Credits" xml:space="preserve">
+    <value>Credits</value>
+  </data>
+
+  <!-- Labels -->
+  <data name="Label_Download" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="Label_Upload" xml:space="preserve">
+    <value>Upload</value>
+  </data>
+  <data name="Label_Language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="Label_Today" xml:space="preserve">
+    <value>Today</value>
+  </data>
+  <data name="Label_ThisMonth" xml:space="preserve">
+    <value>This Month</value>
+  </data>
+  <data name="Label_Total" xml:space="preserve">
+    <value>Total</value>
+  </data>
+  <data name="Label_PeakSpeed" xml:space="preserve">
+    <value>Peak Speed</value>
+  </data>
+
+  <!-- Buttons -->
+  <data name="Button_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Button_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Button_Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+
+  <!-- Menu Items -->
+  <data name="Menu_Options" xml:space="preserve">
+    <value>Options</value>
+  </data>
+  <data name="Menu_Exit" xml:space="preserve">
+    <value>Exit</value>
+  </data>
+
+  <!-- Graph -->
+  <data name="Graph_Title" xml:space="preserve">
+    <value>Network Usage</value>
+  </data>
+  <data name="Graph_NoData" xml:space="preserve">
+    <value>No data available</value>
+  </data>
+  <data name="Graph_Mbps" xml:space="preserve">
+    <value>Mbps</value>
+  </data>
+  <data name="Graph_Time" xml:space="preserve">
+    <value>Time</value>
+  </data>
+
+  <!-- Options Form -->
+  <data name="Options_Title" xml:space="preserve">
+    <value>Data Usage Reporter - Options</value>
+  </data>
+  <data name="Options_EmailSettings" xml:space="preserve">
+    <value>Email Settings</value>
+  </data>
+  <data name="Options_SmtpServer" xml:space="preserve">
+    <value>SMTP Server</value>
+  </data>
+  <data name="Options_SmtpPort" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="Options_EmailFrom" xml:space="preserve">
+    <value>From</value>
+  </data>
+  <data name="Options_EmailTo" xml:space="preserve">
+    <value>To</value>
+  </data>
+  <data name="Options_EnableEmail" xml:space="preserve">
+    <value>Enable Email Reports</value>
+  </data>
+
+  <!-- Messages -->
+  <data name="Message_SettingsSaved" xml:space="preserve">
+    <value>Settings saved successfully</value>
+  </data>
+  <data name="Message_Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+
+  <!-- Email -->
+  <data name="Email_Subject" xml:space="preserve">
+    <value>Daily Usage Report - {0:d}</value>
+  </data>
+  <data name="Email_Greeting" xml:space="preserve">
+    <value>Hello,</value>
+  </data>
+  <data name="Email_Summary" xml:space="preserve">
+    <value>Here is your network usage summary:</value>
+  </data>
+  <data name="Email_Downloaded" xml:space="preserve">
+    <value>Downloaded: {0}</value>
+  </data>
+  <data name="Email_Uploaded" xml:space="preserve">
+    <value>Uploaded: {0}</value>
+  </data>
+  <data name="Email_Footer" xml:space="preserve">
+    <value>Data Usage Reporter</value>
+  </data>
+
+  <!-- Language Names -->
+  <data name="Language_English" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="Language_French" xml:space="preserve">
+    <value>Français</value>
+  </data>
+
+  <!-- Schedule Tab -->
+  <data name="Tab_Schedule" xml:space="preserve">
+    <value>Schedule</value>
+  </data>
+  <data name="Schedule_EnableReports" xml:space="preserve">
+    <value>Enable Scheduled Reports</value>
+  </data>
+  <data name="Schedule_Frequency" xml:space="preserve">
+    <value>Frequency</value>
+  </data>
+  <data name="Schedule_Time" xml:space="preserve">
+    <value>Time</value>
+  </data>
+  <data name="Schedule_DayOfWeek" xml:space="preserve">
+    <value>Day of Week</value>
+  </data>
+  <data name="Schedule_DayOfMonth" xml:space="preserve">
+    <value>Day of Month</value>
+  </data>
+  <data name="Schedule_NextRun" xml:space="preserve">
+    <value>Next Run</value>
+  </data>
+  <data name="Schedule_NotScheduled" xml:space="preserve">
+    <value>Not scheduled</value>
+  </data>
+  <data name="Schedule_Daily" xml:space="preserve">
+    <value>Daily</value>
+  </data>
+  <data name="Schedule_Weekly" xml:space="preserve">
+    <value>Weekly</value>
+  </data>
+  <data name="Schedule_Monthly" xml:space="preserve">
+    <value>Monthly</value>
+  </data>
+  <data name="Button_SaveSchedule" xml:space="preserve">
+    <value>Save Schedule</value>
+  </data>
+
+  <!-- Credits/About Tab -->
+  <data name="About_AppName" xml:space="preserve">
+    <value>Data Usage Reporter</value>
+  </data>
+  <data name="About_Version" xml:space="preserve">
+    <value>Version {0}</value>
+  </data>
+  <data name="About_Date" xml:space="preserve">
+    <value>December 2025</value>
+  </data>
+  <data name="About_DevelopedBy" xml:space="preserve">
+    <value>Developed by {0}</value>
+  </data>
+  <data name="About_ThirdPartyLibraries" xml:space="preserve">
+    <value>Third-Party Libraries</value>
+  </data>
+
+  <!-- Settings Tab -->
+  <data name="Settings_StartWithWindows" xml:space="preserve">
+    <value>Start with Windows</value>
+  </data>
+  <data name="Settings_DataRetention" xml:space="preserve">
+    <value>Data retention (days)</value>
+  </data>
+  <data name="Settings_UpdateInterval" xml:space="preserve">
+    <value>Update interval (ms)</value>
+  </data>
+  <data name="Settings_Note" xml:space="preserve">
+    <value>Note: Some changes require restarting the application to take effect.</value>
+  </data>
+
+  <!-- Email Settings Tab -->
+  <data name="Email_Provider" xml:space="preserve">
+    <value>Provider</value>
+  </data>
+  <data name="Email_SmtpServer" xml:space="preserve">
+    <value>SMTP Server</value>
+  </data>
+  <data name="Email_Port" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="Email_Security" xml:space="preserve">
+    <value>Security</value>
+  </data>
+  <data name="Email_UseTls" xml:space="preserve">
+    <value>Use TLS/SSL</value>
+  </data>
+  <data name="Email_FromEmail" xml:space="preserve">
+    <value>From Email</value>
+  </data>
+  <data name="Email_ToEmail" xml:space="preserve">
+    <value>To Email</value>
+  </data>
+  <data name="Email_Username" xml:space="preserve">
+    <value>Username</value>
+  </data>
+  <data name="Email_Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="Email_TestConnection" xml:space="preserve">
+    <value>Test Connection</value>
+  </data>
+  <data name="Email_SendNow" xml:space="preserve">
+    <value>Send Report Now</value>
+  </data>
+  <data name="Email_SaveSettings" xml:space="preserve">
+    <value>Save Settings</value>
+  </data>
+  <data name="Email_RequiredNote" xml:space="preserve">
+    <value>* Required field. Most providers require an App Password (not your regular password).</value>
+  </data>
+  <data name="Email_Custom" xml:space="preserve">
+    <value>Custom</value>
+  </data>
+  <data name="Email_Testing" xml:space="preserve">
+    <value>Testing...</value>
+  </data>
+  <data name="Email_GeneratingReport" xml:space="preserve">
+    <value>Generating report...</value>
+  </data>
+  <data name="Email_SendingEmail" xml:space="preserve">
+    <value>Sending email...</value>
+  </data>
+  <data name="Email_ConnectionSuccess" xml:space="preserve">
+    <value>Connection successful!</value>
+  </data>
+  <data name="Email_ReportSentSuccess" xml:space="preserve">
+    <value>Report sent successfully!</value>
+  </data>
+  <data name="Email_SettingsSaved" xml:space="preserve">
+    <value>Email settings saved.</value>
+  </data>
+  <data name="Schedule_Saved" xml:space="preserve">
+    <value>Schedule saved.</value>
+  </data>
+</root>

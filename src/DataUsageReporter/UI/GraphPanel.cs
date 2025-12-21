@@ -1,4 +1,5 @@
 using DataUsageReporter.Core;
+using DataUsageReporter.Core.Localization;
 using ScottPlot;
 using ScottPlot.WinForms;
 
@@ -23,11 +24,13 @@ public class GraphPanel : UserControl
     private readonly FormsPlot _plot;
     private readonly IUsageAggregator _aggregator;
     private readonly ISpeedFormatter _formatter;
+    private readonly ILocalizationService _localization;
 
-    public GraphPanel(IUsageAggregator aggregator, ISpeedFormatter formatter)
+    public GraphPanel(IUsageAggregator aggregator, ISpeedFormatter formatter, ILocalizationService localization)
     {
         _aggregator = aggregator;
         _formatter = formatter;
+        _localization = localization;
 
         // Setup layout
         Dock = DockStyle.Fill;
@@ -40,6 +43,12 @@ public class GraphPanel : UserControl
 
         // Add controls
         Controls.Add(_plot);
+    }
+
+    public void RefreshStrings()
+    {
+        // Re-render the plot with updated localized strings
+        _ = RefreshDataAsync();
     }
 
     protected override void OnLoad(EventArgs e)
@@ -66,7 +75,7 @@ public class GraphPanel : UserControl
 
         if (dataPoints.Count == 0)
         {
-            _plot.Plot.Title("No data available");
+            _plot.Plot.Title(_localization.GetString("Graph_NoData"));
             _plot.Refresh();
             return;
         }
@@ -78,13 +87,13 @@ public class GraphPanel : UserControl
 
         // Create scatter plots configured as line charts (no fill, no markers)
         var downloadScatter = _plot.Plot.Add.Scatter(timestamps, downloads);
-        downloadScatter.LegendText = "Download";
+        downloadScatter.LegendText = _localization.GetString("Label_Download");
         downloadScatter.LineStyle.Color = ScottPlot.Color.FromHex("#4CAF50"); // Green
         downloadScatter.LineStyle.Width = 2;
         downloadScatter.MarkerStyle.IsVisible = false;
 
         var uploadScatter = _plot.Plot.Add.Scatter(timestamps, uploads);
-        uploadScatter.LegendText = "Upload";
+        uploadScatter.LegendText = _localization.GetString("Label_Upload");
         uploadScatter.LineStyle.Color = ScottPlot.Color.FromHex("#FF9800"); // Orange
         uploadScatter.LineStyle.Width = 2;
         uploadScatter.MarkerStyle.IsVisible = false;
@@ -93,9 +102,9 @@ public class GraphPanel : UserControl
         _plot.Plot.Axes.DateTimeTicksBottom();
 
         // Format Y axis label
-        _plot.Plot.Axes.Left.Label.Text = "Mbps";
-        _plot.Plot.Axes.Bottom.Label.Text = "Time";
-        _plot.Plot.Title("Network Usage");
+        _plot.Plot.Axes.Left.Label.Text = _localization.GetString("Graph_Mbps");
+        _plot.Plot.Axes.Bottom.Label.Text = _localization.GetString("Graph_Time");
+        _plot.Plot.Title(_localization.GetString("Graph_Title"));
         _plot.Plot.ShowLegend(Alignment.UpperRight);
 
         _plot.Refresh();

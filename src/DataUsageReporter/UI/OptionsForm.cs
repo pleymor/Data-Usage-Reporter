@@ -1,5 +1,6 @@
 using System.Reflection;
 using DataUsageReporter.Core;
+using DataUsageReporter.Core.Localization;
 using DataUsageReporter.Data;
 using DataUsageReporter.Email;
 
@@ -13,6 +14,7 @@ public class OptionsForm : Form
     private readonly TabControl _tabControl;
     private readonly GraphPanel _graphPanel;
     private readonly ISettingsRepository _settingsRepository;
+    private readonly ILocalizationService _localization;
     private readonly ICredentialManager _credentialManager;
     private readonly IEmailSender? _emailSender;
     private readonly StartupManager _startupManager;
@@ -20,6 +22,13 @@ public class OptionsForm : Form
     private readonly IUsageAggregator _usageAggregator;
     private readonly ISpeedFormatter _speedFormatter;
     private readonly IReportScheduler? _reportScheduler;
+
+    // Tab references for localization
+    private TabPage? _graphTab;
+    private TabPage? _settingsTab;
+    private TabPage? _emailTab;
+    private TabPage? _scheduleTab;
+    private TabPage? _aboutTab;
 
     // Email settings controls
     private ComboBox? _smtpPresetComboBox;
@@ -59,12 +68,14 @@ public class OptionsForm : Form
         IUsageAggregator aggregator,
         ISpeedFormatter formatter,
         ISettingsRepository settingsRepository,
+        ILocalizationService localization,
         ICredentialManager? credentialManager = null,
         IEmailSender? emailSender = null,
         IUsageRepository? usageRepository = null,
         IReportScheduler? reportScheduler = null)
     {
         _settingsRepository = settingsRepository;
+        _localization = localization;
         _credentialManager = credentialManager ?? new CredentialManager();
         _emailSender = emailSender;
         _startupManager = new StartupManager();
@@ -73,8 +84,11 @@ public class OptionsForm : Form
         _speedFormatter = formatter;
         _reportScheduler = reportScheduler;
 
+        // Subscribe to language changes
+        _localization.LanguageChanged += OnLanguageChanged;
+
         // Form setup
-        Text = "Data Usage Reporter - Options";
+        Text = _localization.GetString("Options_Title");
         Size = new Size(800, 600);
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(600, 400);
@@ -86,38 +100,59 @@ public class OptionsForm : Form
         };
 
         // Usage Graph tab
-        var graphTab = new TabPage("Usage Graph");
-        _graphPanel = new GraphPanel(aggregator, formatter)
+        _graphTab = new TabPage(_localization.GetString("Tab_Graph"));
+        _graphPanel = new GraphPanel(aggregator, formatter, _localization)
         {
             Dock = DockStyle.Fill
         };
-        graphTab.Controls.Add(_graphPanel);
-        _tabControl.TabPages.Add(graphTab);
+        _graphTab.Controls.Add(_graphPanel);
+        _tabControl.TabPages.Add(_graphTab);
 
         // Settings tab
-        var settingsTab = new TabPage("Settings");
-        settingsTab.Controls.Add(CreateSettingsPanel());
-        _tabControl.TabPages.Add(settingsTab);
+        _settingsTab = new TabPage(_localization.GetString("Tab_Settings"));
+        _settingsTab.Controls.Add(CreateSettingsPanel());
+        _tabControl.TabPages.Add(_settingsTab);
 
         // Email Settings tab
-        var emailTab = new TabPage("Email Settings");
-        emailTab.Controls.Add(CreateEmailSettingsPanel());
-        _tabControl.TabPages.Add(emailTab);
+        _emailTab = new TabPage(_localization.GetString("Options_EmailSettings"));
+        _emailTab.Controls.Add(CreateEmailSettingsPanel());
+        _tabControl.TabPages.Add(_emailTab);
 
         // Schedule tab
-        var scheduleTab = new TabPage("Schedule");
-        scheduleTab.Controls.Add(CreateSchedulePanel());
-        _tabControl.TabPages.Add(scheduleTab);
+        _scheduleTab = new TabPage(_localization.GetString("Tab_Schedule"));
+        _scheduleTab.Controls.Add(CreateSchedulePanel());
+        _tabControl.TabPages.Add(_scheduleTab);
 
         // About tab
-        var aboutTab = new TabPage("About");
-        aboutTab.Controls.Add(CreateAboutPanel());
-        _tabControl.TabPages.Add(aboutTab);
+        _aboutTab = new TabPage(_localization.GetString("Tab_Credits"));
+        _aboutTab.Controls.Add(CreateAboutPanel());
+        _tabControl.TabPages.Add(_aboutTab);
 
         Controls.Add(_tabControl);
 
         LoadEmailSettings();
         LoadScheduleSettings();
+    }
+
+    private void OnLanguageChanged(object? sender, LanguageChangedEventArgs e)
+    {
+        RefreshStrings();
+    }
+
+    private void RefreshStrings()
+    {
+        // Update form title
+        Text = _localization.GetString("Options_Title");
+
+        // Update tab titles
+        if (_graphTab != null) _graphTab.Text = _localization.GetString("Tab_Graph");
+        if (_settingsTab != null) _settingsTab.Text = _localization.GetString("Tab_Settings");
+        if (_emailTab != null) _emailTab.Text = _localization.GetString("Options_EmailSettings");
+        if (_scheduleTab != null) _scheduleTab.Text = _localization.GetString("Tab_Schedule");
+        if (_aboutTab != null) _aboutTab.Text = _localization.GetString("Tab_Credits");
+
+        // Refresh graph panel
+        _graphPanel.RefreshStrings();
     }
 
     private Panel CreateSettingsPanel()
@@ -132,7 +167,7 @@ public class OptionsForm : Form
         {
             Dock = DockStyle.Top,
             ColumnCount = 2,
-            RowCount = 3,
+            RowCount = 4,
             AutoSize = true,
             Padding = new Padding(10)
         };
@@ -141,10 +176,45 @@ public class OptionsForm : Form
 
         var settings = _settingsRepository.Load();
 
+        // Language selection
+        layout.Controls.Add(new Label
+        {
+            Text = _localization.GetString("Label_Language") + ":",
+            AutoSize = true,
+            Anchor = AnchorStyles.Left
+        }, 0, 0);
+
+        var languageComboBox = new ComboBox
+        {
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            Width = 150
+        };
+
+        // Populate language dropdown
+        foreach (var lang in _localization.SupportedLanguages)
+        {
+            languageComboBox.Items.Add(lang.DisplayName);
+            if (lang.Code == _localization.CurrentLanguage)
+            {
+                languageComboBox.SelectedIndex = languageComboBox.Items.Count - 1;
+            }
+        }
+
+        languageComboBox.SelectedIndexChanged += (s, e) =>
+        {
+            var selectedIndex = languageComboBox.SelectedIndex;
+            if (selectedIndex >= 0 && selectedIndex < _localization.SupportedLanguages.Count)
+            {
+                var selectedLang = _localization.SupportedLanguages[selectedIndex];
+                _localization.SetLanguage(selectedLang.Code);
+            }
+        };
+        layout.Controls.Add(languageComboBox, 1, 0);
+
         // Start with Windows checkbox
         var startupCheckbox = new CheckBox
         {
-            Text = "Start with Windows",
+            Text = _localization.GetString("Settings_StartWithWindows"),
             Checked = _startupManager.IsStartupEnabled(),
             AutoSize = true
         };
@@ -154,16 +224,16 @@ public class OptionsForm : Form
             settings.StartWithWindows = startupCheckbox.Checked;
             _settingsRepository.Save(settings);
         };
-        layout.Controls.Add(startupCheckbox, 0, 0);
+        layout.Controls.Add(startupCheckbox, 0, 1);
         layout.SetColumnSpan(startupCheckbox, 2);
 
         // Data retention days
         layout.Controls.Add(new Label
         {
-            Text = "Data retention (days):",
+            Text = _localization.GetString("Settings_DataRetention") + ":",
             AutoSize = true,
             Anchor = AnchorStyles.Left
-        }, 0, 1);
+        }, 0, 2);
 
         var retentionInput = new NumericUpDown
         {
@@ -177,15 +247,15 @@ public class OptionsForm : Form
             settings.DataRetentionDays = (int)retentionInput.Value;
             _settingsRepository.Save(settings);
         };
-        layout.Controls.Add(retentionInput, 1, 1);
+        layout.Controls.Add(retentionInput, 1, 2);
 
         // Update interval
         layout.Controls.Add(new Label
         {
-            Text = "Update interval (ms):",
+            Text = _localization.GetString("Settings_UpdateInterval") + ":",
             AutoSize = true,
             Anchor = AnchorStyles.Left
-        }, 0, 2);
+        }, 0, 3);
 
         var intervalInput = new NumericUpDown
         {
@@ -200,13 +270,13 @@ public class OptionsForm : Form
             settings.UpdateIntervalMs = (int)intervalInput.Value;
             _settingsRepository.Save(settings);
         };
-        layout.Controls.Add(intervalInput, 1, 2);
+        layout.Controls.Add(intervalInput, 1, 3);
 
         panel.Controls.Add(layout);
 
         var noteLabel = new Label
         {
-            Text = "Note: Some changes require restarting the application to take effect.",
+            Text = _localization.GetString("Settings_Note"),
             Dock = DockStyle.Bottom,
             AutoSize = true,
             ForeColor = Color.Gray,
@@ -234,69 +304,70 @@ public class OptionsForm : Form
             AutoSize = true,
             Padding = new Padding(10)
         };
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 130));
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150));
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
         int row = 0;
 
         // SMTP Preset dropdown
-        layout.Controls.Add(new Label { Text = "Provider:", AutoSize = true }, 0, row);
+        layout.Controls.Add(new Label { Text = _localization.GetString("Email_Provider") + ":", AutoSize = true }, 0, row);
         _smtpPresetComboBox = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 200 };
-        foreach (var preset in SmtpPresets)
+        _smtpPresetComboBox.Items.Add(_localization.GetString("Email_Custom"));
+        for (int i = 1; i < SmtpPresets.Length; i++)
         {
-            _smtpPresetComboBox.Items.Add(preset.Name);
+            _smtpPresetComboBox.Items.Add(SmtpPresets[i].Name);
         }
         _smtpPresetComboBox.SelectedIndex = 0;
         _smtpPresetComboBox.SelectedIndexChanged += OnSmtpPresetChanged;
         layout.Controls.Add(_smtpPresetComboBox, 1, row++);
 
         // SMTP Server
-        layout.Controls.Add(new Label { Text = "SMTP Server:", AutoSize = true }, 0, row);
+        layout.Controls.Add(new Label { Text = _localization.GetString("Email_SmtpServer") + ":", AutoSize = true }, 0, row);
         _smtpServerTextBox = new TextBox { Width = 300 };
         layout.Controls.Add(_smtpServerTextBox, 1, row++);
 
         // SMTP Port
-        layout.Controls.Add(new Label { Text = "Port:", AutoSize = true }, 0, row);
+        layout.Controls.Add(new Label { Text = _localization.GetString("Email_Port") + ":", AutoSize = true }, 0, row);
         _smtpPortInput = new NumericUpDown { Minimum = 1, Maximum = 65535, Value = 587, Width = 100 };
         layout.Controls.Add(_smtpPortInput, 1, row++);
 
         // Use SSL
-        layout.Controls.Add(new Label { Text = "Security:", AutoSize = true }, 0, row);
-        _useSslCheckBox = new CheckBox { Text = "Use TLS/SSL", Checked = true };
+        layout.Controls.Add(new Label { Text = _localization.GetString("Email_Security") + ":", AutoSize = true }, 0, row);
+        _useSslCheckBox = new CheckBox { Text = _localization.GetString("Email_UseTls"), Checked = true };
         layout.Controls.Add(_useSslCheckBox, 1, row++);
 
         // Sender Email
-        layout.Controls.Add(new Label { Text = "From Email:", AutoSize = true }, 0, row);
+        layout.Controls.Add(new Label { Text = _localization.GetString("Email_FromEmail") + ":", AutoSize = true }, 0, row);
         _senderEmailTextBox = new TextBox { Width = 300 };
         layout.Controls.Add(_senderEmailTextBox, 1, row++);
 
         // Recipient Email (mandatory)
-        layout.Controls.Add(new Label { Text = "To Email: *", AutoSize = true, ForeColor = Color.Black }, 0, row);
+        layout.Controls.Add(new Label { Text = _localization.GetString("Email_ToEmail") + ": *", AutoSize = true, ForeColor = Color.Black }, 0, row);
         _recipientEmailTextBox = new TextBox { Width = 300 };
         layout.Controls.Add(_recipientEmailTextBox, 1, row++);
 
         // Username
-        layout.Controls.Add(new Label { Text = "Username:", AutoSize = true }, 0, row);
+        layout.Controls.Add(new Label { Text = _localization.GetString("Email_Username") + ":", AutoSize = true }, 0, row);
         _usernameTextBox = new TextBox { Width = 300 };
         layout.Controls.Add(_usernameTextBox, 1, row++);
 
         // Password
-        layout.Controls.Add(new Label { Text = "Password:", AutoSize = true }, 0, row);
+        layout.Controls.Add(new Label { Text = _localization.GetString("Email_Password") + ":", AutoSize = true }, 0, row);
         _passwordTextBox = new TextBox { Width = 300, UseSystemPasswordChar = true };
         layout.Controls.Add(_passwordTextBox, 1, row++);
 
         // Buttons panel
         var buttonsPanel = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.LeftToRight };
 
-        _testConnectionButton = new Button { Text = "Test Connection", Width = 110, Margin = new Padding(0, 0, 5, 0) };
+        _testConnectionButton = new Button { Text = _localization.GetString("Email_TestConnection"), Width = 130, Margin = new Padding(0, 0, 5, 0) };
         _testConnectionButton.Click += OnTestConnectionClick;
         buttonsPanel.Controls.Add(_testConnectionButton);
 
-        _sendNowButton = new Button { Text = "Send Report Now", Width = 110, Margin = new Padding(0, 0, 5, 0) };
+        _sendNowButton = new Button { Text = _localization.GetString("Email_SendNow"), Width = 140, Margin = new Padding(0, 0, 5, 0) };
         _sendNowButton.Click += OnSendNowClick;
         buttonsPanel.Controls.Add(_sendNowButton);
 
-        var saveButton = new Button { Text = "Save Settings", Width = 100 };
+        var saveButton = new Button { Text = _localization.GetString("Email_SaveSettings"), Width = 100 };
         saveButton.Click += OnSaveEmailSettingsClick;
         buttonsPanel.Controls.Add(saveButton);
 
@@ -313,7 +384,7 @@ public class OptionsForm : Form
         // Required fields note
         var requiredNote = new Label
         {
-            Text = "* Required field. Most providers require an App Password (not your regular password).",
+            Text = _localization.GetString("Email_RequiredNote"),
             AutoSize = true,
             ForeColor = Color.Gray,
             Padding = new Padding(0, 10, 0, 0)
@@ -360,28 +431,32 @@ public class OptionsForm : Form
             AutoSize = true,
             Padding = new Padding(10)
         };
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 160));
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
         int row = 0;
 
         // Enable schedule
-        _enableScheduleCheckBox = new CheckBox { Text = "Enable Scheduled Reports" };
+        _enableScheduleCheckBox = new CheckBox { Text = _localization.GetString("Schedule_EnableReports") };
         _enableScheduleCheckBox.CheckedChanged += OnScheduleEnabledChanged;
         layout.Controls.Add(_enableScheduleCheckBox, 0, row);
         layout.SetColumnSpan(_enableScheduleCheckBox, 2);
         row++;
 
         // Frequency
-        layout.Controls.Add(new Label { Text = "Frequency:", AutoSize = true }, 0, row);
+        layout.Controls.Add(new Label { Text = _localization.GetString("Schedule_Frequency") + ":", AutoSize = true }, 0, row);
         _frequencyComboBox = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 150 };
-        _frequencyComboBox.Items.AddRange(new object[] { "Daily", "Weekly", "Monthly" });
+        _frequencyComboBox.Items.AddRange(new object[] {
+            _localization.GetString("Schedule_Daily"),
+            _localization.GetString("Schedule_Weekly"),
+            _localization.GetString("Schedule_Monthly")
+        });
         _frequencyComboBox.SelectedIndex = 0;
         _frequencyComboBox.SelectedIndexChanged += OnFrequencyChanged;
         layout.Controls.Add(_frequencyComboBox, 1, row++);
 
         // Time of day
-        layout.Controls.Add(new Label { Text = "Time:", AutoSize = true }, 0, row);
+        layout.Controls.Add(new Label { Text = _localization.GetString("Schedule_Time") + ":", AutoSize = true }, 0, row);
         _timePicker = new DateTimePicker
         {
             Format = DateTimePickerFormat.Time,
@@ -391,24 +466,24 @@ public class OptionsForm : Form
         layout.Controls.Add(_timePicker, 1, row++);
 
         // Day of week (for weekly)
-        layout.Controls.Add(new Label { Text = "Day of Week:", AutoSize = true }, 0, row);
+        layout.Controls.Add(new Label { Text = _localization.GetString("Schedule_DayOfWeek") + ":", AutoSize = true }, 0, row);
         _dayOfWeekComboBox = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 150 };
         _dayOfWeekComboBox.Items.AddRange(new object[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" });
         _dayOfWeekComboBox.SelectedIndex = 1;
         layout.Controls.Add(_dayOfWeekComboBox, 1, row++);
 
         // Day of month (for monthly)
-        layout.Controls.Add(new Label { Text = "Day of Month:", AutoSize = true }, 0, row);
+        layout.Controls.Add(new Label { Text = _localization.GetString("Schedule_DayOfMonth") + ":", AutoSize = true }, 0, row);
         _dayOfMonthInput = new NumericUpDown { Minimum = 1, Maximum = 28, Value = 1, Width = 100 };
         layout.Controls.Add(_dayOfMonthInput, 1, row++);
 
         // Next run label
-        layout.Controls.Add(new Label { Text = "Next Run:", AutoSize = true }, 0, row);
-        _nextRunLabel = new Label { Text = "Not scheduled", AutoSize = true };
+        layout.Controls.Add(new Label { Text = _localization.GetString("Schedule_NextRun") + ":", AutoSize = true }, 0, row);
+        _nextRunLabel = new Label { Text = _localization.GetString("Schedule_NotScheduled"), AutoSize = true };
         layout.Controls.Add(_nextRunLabel, 1, row++);
 
         // Save button
-        var saveButton = new Button { Text = "Save Schedule", Width = 120 };
+        var saveButton = new Button { Text = _localization.GetString("Button_SaveSchedule"), Width = 160 };
         saveButton.Click += OnSaveScheduleClick;
         layout.Controls.Add(saveButton, 0, row);
 
@@ -500,7 +575,7 @@ public class OptionsForm : Form
         }
 
         _testConnectionButton!.Enabled = false;
-        _testResultLabel!.Text = "Testing...";
+        _testResultLabel!.Text = _localization.GetString("Email_Testing");
         _testResultLabel.ForeColor = Color.Gray;
 
         try
@@ -511,7 +586,7 @@ public class OptionsForm : Form
             var result = await _emailSender.TestConnectionAsync();
             if (result.IsValid)
             {
-                _testResultLabel.Text = "Connection successful!";
+                _testResultLabel.Text = _localization.GetString("Email_ConnectionSuccess");
                 _testResultLabel.ForeColor = Color.Green;
             }
             else
@@ -542,7 +617,7 @@ public class OptionsForm : Form
         }
 
         _sendNowButton!.Enabled = false;
-        _testResultLabel!.Text = "Generating report...";
+        _testResultLabel!.Text = _localization.GetString("Email_GeneratingReport");
         _testResultLabel.ForeColor = Color.Gray;
 
         try
@@ -569,12 +644,12 @@ public class OptionsForm : Form
                 return;
             }
 
-            var reportGenerator = new ReportGenerator(_usageRepository, _usageAggregator, _speedFormatter);
+            var reportGenerator = new ReportGenerator(_usageRepository, _usageAggregator, _speedFormatter, _localization);
             var now = DateTime.Now;
             var todayStart = now.Date; // Midnight today
             var report = await reportGenerator.GenerateReportAsync(todayStart, now, ReportFrequency.Daily);
 
-            _testResultLabel.Text = "Sending email...";
+            _testResultLabel.Text = _localization.GetString("Email_SendingEmail");
 
             // Send with timeout (60 seconds)
             var sendTask = emailSender.SendWithDetailsAsync(report);
@@ -592,7 +667,7 @@ public class OptionsForm : Form
 
             if (success)
             {
-                _testResultLabel.Text = "Report sent successfully!";
+                _testResultLabel.Text = _localization.GetString("Email_ReportSentSuccess");
                 _testResultLabel.ForeColor = Color.Green;
             }
             else
@@ -615,7 +690,7 @@ public class OptionsForm : Form
     private void OnSaveEmailSettingsClick(object? sender, EventArgs e)
     {
         SaveEmailSettingsInternal();
-        MessageBox.Show("Email settings saved.", "Settings", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        MessageBox.Show(_localization.GetString("Email_SettingsSaved"), _localization.GetString("Tab_Settings"), MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     private void SaveEmailSettingsInternal()
@@ -661,7 +736,7 @@ public class OptionsForm : Form
         // Notify the scheduler to recalculate
         _reportScheduler?.RecalculateNextRun();
 
-        MessageBox.Show("Schedule saved.", "Settings", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        MessageBox.Show(_localization.GetString("Schedule_Saved"), _localization.GetString("Tab_Settings"), MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     private void UpdateNextRunLabel(ReportSchedule schedule)
@@ -698,7 +773,7 @@ public class OptionsForm : Form
         // Application name
         var appNameLabel = new Label
         {
-            Text = "Data Usage Reporter",
+            Text = _localization.GetString("About_AppName"),
             Font = new Font(Font.FontFamily, 16, FontStyle.Bold),
             AutoSize = true,
             Padding = new Padding(0, 0, 0, 5)
@@ -708,7 +783,7 @@ public class OptionsForm : Form
         // Version
         var versionLabel = new Label
         {
-            Text = "Version 1.0.0",
+            Text = _localization.GetString("About_Version", "1.0.0"),
             AutoSize = true,
             Padding = new Padding(0, 0, 0, 5)
         };
@@ -717,7 +792,7 @@ public class OptionsForm : Form
         // Date
         var dateLabel = new Label
         {
-            Text = "December 2025",
+            Text = _localization.GetString("About_Date"),
             AutoSize = true,
             ForeColor = Color.Gray,
             Padding = new Padding(0, 0, 0, 15)
@@ -727,7 +802,7 @@ public class OptionsForm : Form
         // Developer
         var developerLabel = new Label
         {
-            Text = "Developed by Adrien Laugueux",
+            Text = _localization.GetString("About_DevelopedBy", "Adrien Laugueux"),
             AutoSize = true,
             Padding = new Padding(0, 0, 0, 20)
         };
@@ -736,7 +811,7 @@ public class OptionsForm : Form
         // Third-party libraries header
         var librariesHeader = new Label
         {
-            Text = "Third-Party Libraries",
+            Text = _localization.GetString("About_ThirdPartyLibraries"),
             Font = new Font(Font.FontFamily, 11, FontStyle.Bold),
             AutoSize = true,
             Padding = new Padding(0, 0, 0, 10)

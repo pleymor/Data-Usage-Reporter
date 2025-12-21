@@ -1,4 +1,5 @@
 using DataUsageReporter.Core;
+using DataUsageReporter.Core.Localization;
 using DataUsageReporter.Data;
 using DataUsageReporter.Data.Models;
 using DataUsageReporter.Email;
@@ -25,6 +26,7 @@ static class Program
     private static IEmailSender? _emailSender;
     private static OptionsForm? _optionsForm;
     private static SpeedOverlay? _speedOverlay;
+    private static ILocalizationService? _localizationService;
 
     [STAThread]
     static void Main(string[] args)
@@ -59,6 +61,15 @@ static class Program
             var dbInitializer = new DatabaseInitializer(settings.DatabasePath);
             dbInitializer.Initialize();
 
+            // Initialize localization service
+            _localizationService = new LocalizationService(
+                settings.Language,
+                lang =>
+                {
+                    settings.Language = lang;
+                    _settingsRepository.Save(settings);
+                });
+
             // Initialize components
             _speedFormatter = new SpeedFormatter();
             _networkMonitor = new NetworkMonitor();
@@ -66,7 +77,7 @@ static class Program
             _usageAggregator = new UsageAggregator(_usageRepository);
             _retentionManager = new RetentionManager(_usageRepository, settings.DataRetentionDays);
             _credentialManager = new CredentialManager();
-            _trayIcon = new TrayIcon(_speedFormatter);
+            _trayIcon = new TrayIcon(_speedFormatter, _localizationService);
 
             // Create speed overlay (visible in taskbar area)
             _speedOverlay = new SpeedOverlay(_speedFormatter);
@@ -77,7 +88,7 @@ static class Program
             if (emailConfig != null && !string.IsNullOrEmpty(emailConfig.RecipientEmail))
             {
                 _emailSender = new EmailSender(emailConfig, _credentialManager);
-                var reportGenerator = new ReportGenerator(_usageRepository, _usageAggregator!, _speedFormatter);
+                var reportGenerator = new ReportGenerator(_usageRepository, _usageAggregator!, _speedFormatter, _localizationService);
                 _reportScheduler = new Scheduler(_settingsRepository, reportGenerator, _emailSender);
                 _reportScheduler.ReportCompleted += OnReportCompleted;
                 _reportScheduler.Start();
@@ -259,6 +270,7 @@ static class Program
                 _usageAggregator!,
                 _speedFormatter!,
                 _settingsRepository!,
+                _localizationService!,
                 _credentialManager,
                 _emailSender,
                 _usageRepository,

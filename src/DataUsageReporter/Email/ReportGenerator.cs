@@ -1,5 +1,6 @@
 using System.Text;
 using DataUsageReporter.Core;
+using DataUsageReporter.Core.Localization;
 using DataUsageReporter.Data;
 
 namespace DataUsageReporter.Email;
@@ -12,12 +13,18 @@ public class ReportGenerator : IReportGenerator
     private readonly IUsageRepository _repository;
     private readonly IUsageAggregator _usageAggregator;
     private readonly ISpeedFormatter _formatter;
+    private readonly ILocalizationService _localization;
 
-    public ReportGenerator(IUsageRepository repository, IUsageAggregator usageAggregator, ISpeedFormatter formatter)
+    public ReportGenerator(
+        IUsageRepository repository,
+        IUsageAggregator usageAggregator,
+        ISpeedFormatter formatter,
+        ILocalizationService localization)
     {
         _repository = repository;
         _usageAggregator = usageAggregator;
         _formatter = formatter;
+        _localization = localization;
     }
 
     public async Task<EmailMessage> GenerateReportAsync(
@@ -55,7 +62,7 @@ public class ReportGenerator : IReportGenerator
             ? $"{periodStart:d}"
             : $"{periodStart:d} - {periodEnd:d}";
 
-        var subject = $"Network Usage Report - {GetFrequencyLabel(frequency)} ({dateRange})";
+        var subject = _localization.GetString("Email_Subject", DateTime.Now);
         var htmlBody = GenerateHtmlReport(summaries, totalUsage, periodStart, periodEnd, frequency);
         var plainTextBody = GeneratePlainTextReport(summaries, totalUsage, periodStart, periodEnd, frequency);
 
@@ -94,22 +101,23 @@ public class ReportGenerator : IReportGenerator
             ? $"{periodStart:MMMM d, yyyy}"
             : $"{periodStart:MMMM d, yyyy} - {periodEnd:MMMM d, yyyy}";
 
-        sb.AppendLine($"<h1>Network Usage Report</h1>");
-        sb.AppendLine($"<p>{GetFrequencyLabel(frequency)} Report for {dateDisplay}</p>");
+        sb.AppendLine($"<h1>{_localization.GetString("Graph_Title")}</h1>");
+        sb.AppendLine($"<p>{_localization.GetString("Email_Greeting")}</p>");
+        sb.AppendLine($"<p>{_localization.GetString("Email_Summary")}</p>");
 
         // Summary section
         sb.AppendLine("<div class='summary'>");
-        sb.AppendLine("<h2>Total Usage</h2>");
+        sb.AppendLine($"<h2>{_localization.GetString("Label_Total")}</h2>");
         if (totalUsage != null)
         {
-            sb.AppendLine($"<div class='stat'><div class='stat-label'>Download</div><div class='stat-value download'>{_formatter.FormatBytes(totalUsage.TotalDownload)}</div></div>");
-            sb.AppendLine($"<div class='stat'><div class='stat-label'>Upload</div><div class='stat-value upload'>{_formatter.FormatBytes(totalUsage.TotalUpload)}</div></div>");
-            sb.AppendLine($"<div class='stat'><div class='stat-label'>Peak Download</div><div class='stat-value download'>{_formatter.FormatSpeed(totalUsage.PeakDownloadSpeed)}</div></div>");
-            sb.AppendLine($"<div class='stat'><div class='stat-label'>Peak Upload</div><div class='stat-value upload'>{_formatter.FormatSpeed(totalUsage.PeakUploadSpeed)}</div></div>");
+            sb.AppendLine($"<div class='stat'><div class='stat-label'>{_localization.GetString("Label_Download")}</div><div class='stat-value download'>{_formatter.FormatBytes(totalUsage.TotalDownload)}</div></div>");
+            sb.AppendLine($"<div class='stat'><div class='stat-label'>{_localization.GetString("Label_Upload")}</div><div class='stat-value upload'>{_formatter.FormatBytes(totalUsage.TotalUpload)}</div></div>");
+            sb.AppendLine($"<div class='stat'><div class='stat-label'>{_localization.GetString("Label_PeakSpeed")} ↓</div><div class='stat-value download'>{_formatter.FormatSpeed(totalUsage.PeakDownloadSpeed)}</div></div>");
+            sb.AppendLine($"<div class='stat'><div class='stat-label'>{_localization.GetString("Label_PeakSpeed")} ↑</div><div class='stat-value upload'>{_formatter.FormatSpeed(totalUsage.PeakUploadSpeed)}</div></div>");
         }
         else
         {
-            sb.AppendLine("<p>No usage data available for this period.</p>");
+            sb.AppendLine($"<p>{_localization.GetString("Graph_NoData")}</p>");
         }
         sb.AppendLine("</div>");
 
@@ -130,8 +138,8 @@ public class ReportGenerator : IReportGenerator
 
             if (dailyData.Count > 1) // Only show breakdown if multiple days
             {
-                sb.AppendLine("<h2>Daily Breakdown</h2>");
-                sb.AppendLine("<table><tr><th>Date</th><th>Download</th><th>Upload</th></tr>");
+                sb.AppendLine($"<h2>{_localization.GetString("Label_Today")}</h2>");
+                sb.AppendLine($"<table><tr><th>Date</th><th>{_localization.GetString("Label_Download")}</th><th>{_localization.GetString("Label_Upload")}</th></tr>");
 
                 foreach (var day in dailyData)
                 {
@@ -142,7 +150,7 @@ public class ReportGenerator : IReportGenerator
             }
         }
 
-        sb.AppendLine("<div class='footer'>Generated by Data Usage Reporter</div>");
+        sb.AppendLine($"<div class='footer'>{_localization.GetString("Email_Footer")}</div>");
         sb.AppendLine("</body></html>");
 
         return sb.ToString();
@@ -162,23 +170,24 @@ public class ReportGenerator : IReportGenerator
             ? $"{periodStart:d}"
             : $"{periodStart:d} - {periodEnd:d}";
 
-        sb.AppendLine("NETWORK USAGE REPORT");
+        sb.AppendLine(_localization.GetString("Graph_Title").ToUpperInvariant());
         sb.AppendLine("====================");
-        sb.AppendLine($"{GetFrequencyLabel(frequency)} Report for {dateDisplay}");
+        sb.AppendLine(_localization.GetString("Email_Greeting"));
+        sb.AppendLine(_localization.GetString("Email_Summary"));
         sb.AppendLine();
 
-        sb.AppendLine("TOTAL USAGE");
+        sb.AppendLine(_localization.GetString("Label_Total").ToUpperInvariant());
         sb.AppendLine("-----------");
         if (totalUsage != null)
         {
-            sb.AppendLine($"Download:      {_formatter.FormatBytes(totalUsage.TotalDownload)}");
-            sb.AppendLine($"Upload:        {_formatter.FormatBytes(totalUsage.TotalUpload)}");
-            sb.AppendLine($"Peak Download: {_formatter.FormatSpeed(totalUsage.PeakDownloadSpeed)}");
-            sb.AppendLine($"Peak Upload:   {_formatter.FormatSpeed(totalUsage.PeakUploadSpeed)}");
+            sb.AppendLine(_localization.GetString("Email_Downloaded", _formatter.FormatBytes(totalUsage.TotalDownload)));
+            sb.AppendLine(_localization.GetString("Email_Uploaded", _formatter.FormatBytes(totalUsage.TotalUpload)));
+            sb.AppendLine($"{_localization.GetString("Label_PeakSpeed")} ↓: {_formatter.FormatSpeed(totalUsage.PeakDownloadSpeed)}");
+            sb.AppendLine($"{_localization.GetString("Label_PeakSpeed")} ↑: {_formatter.FormatSpeed(totalUsage.PeakUploadSpeed)}");
         }
         else
         {
-            sb.AppendLine("No usage data available for this period.");
+            sb.AppendLine(_localization.GetString("Graph_NoData"));
         }
         sb.AppendLine();
 
@@ -198,30 +207,19 @@ public class ReportGenerator : IReportGenerator
 
             if (dailyData.Count > 1)
             {
-                sb.AppendLine("DAILY BREAKDOWN");
+                sb.AppendLine(_localization.GetString("Label_Today").ToUpperInvariant());
                 sb.AppendLine("---------------");
 
                 foreach (var day in dailyData)
                 {
-                    sb.AppendLine($"{day.Date:MMM d}:  Down: {_formatter.FormatBytes(day.Download),10}  Up: {_formatter.FormatBytes(day.Upload),10}");
+                    sb.AppendLine($"{day.Date:MMM d}:  {_localization.GetString("Label_Download")}: {_formatter.FormatBytes(day.Download),10}  {_localization.GetString("Label_Upload")}: {_formatter.FormatBytes(day.Upload),10}");
                 }
             }
         }
 
         sb.AppendLine();
-        sb.AppendLine("Generated by Data Usage Reporter");
+        sb.AppendLine(_localization.GetString("Email_Footer"));
 
         return sb.ToString();
-    }
-
-    private static string GetFrequencyLabel(ReportFrequency frequency)
-    {
-        return frequency switch
-        {
-            ReportFrequency.Daily => "Daily",
-            ReportFrequency.Weekly => "Weekly",
-            ReportFrequency.Monthly => "Monthly",
-            _ => "Usage"
-        };
     }
 }

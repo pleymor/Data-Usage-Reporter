@@ -27,6 +27,7 @@ public class AppSettings
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "DataUsageReporter",
         "usage.db");
+    public string? Language { get; set; }
 }
 
 /// <summary>

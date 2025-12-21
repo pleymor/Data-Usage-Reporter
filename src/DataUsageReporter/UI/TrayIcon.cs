@@ -1,5 +1,6 @@
 using System.Drawing;
 using DataUsageReporter.Core;
+using DataUsageReporter.Core.Localization;
 
 namespace DataUsageReporter.UI;
 
@@ -11,14 +12,18 @@ public class TrayIcon : ITrayIcon
 {
     private readonly NotifyIcon _notifyIcon;
     private readonly SpeedDisplay _speedDisplay;
+    private readonly ILocalizationService _localization;
+    private ToolStripMenuItem? _optionsItem;
+    private ToolStripMenuItem? _exitItem;
     private bool _disposed;
 
     public event EventHandler? OptionsRequested;
     public event EventHandler? ExitRequested;
 
-    public TrayIcon(ISpeedFormatter formatter)
+    public TrayIcon(ISpeedFormatter formatter, ILocalizationService localization)
     {
         _speedDisplay = new SpeedDisplay(formatter);
+        _localization = localization;
 
         _notifyIcon = new NotifyIcon
         {
@@ -29,6 +34,22 @@ public class TrayIcon : ITrayIcon
         };
 
         _notifyIcon.DoubleClick += (s, e) => OptionsRequested?.Invoke(this, EventArgs.Empty);
+
+        // Subscribe to language changes
+        _localization.LanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged(object? sender, LanguageChangedEventArgs e)
+    {
+        RefreshStrings();
+    }
+
+    private void RefreshStrings()
+    {
+        if (_optionsItem != null)
+            _optionsItem.Text = _localization.GetString("Menu_Options") + "...";
+        if (_exitItem != null)
+            _exitItem.Text = _localization.GetString("Menu_Exit");
     }
 
     public void UpdateSpeed(SpeedReading speed)
@@ -64,15 +85,15 @@ public class TrayIcon : ITrayIcon
     {
         var menu = new ContextMenuStrip();
 
-        var optionsItem = new ToolStripMenuItem("Options...");
-        optionsItem.Click += (s, e) => OptionsRequested?.Invoke(this, EventArgs.Empty);
-        menu.Items.Add(optionsItem);
+        _optionsItem = new ToolStripMenuItem(_localization.GetString("Menu_Options") + "...");
+        _optionsItem.Click += (s, e) => OptionsRequested?.Invoke(this, EventArgs.Empty);
+        menu.Items.Add(_optionsItem);
 
         menu.Items.Add(new ToolStripSeparator());
 
-        var exitItem = new ToolStripMenuItem("Exit");
-        exitItem.Click += (s, e) => ExitRequested?.Invoke(this, EventArgs.Empty);
-        menu.Items.Add(exitItem);
+        _exitItem = new ToolStripMenuItem(_localization.GetString("Menu_Exit"));
+        _exitItem.Click += (s, e) => ExitRequested?.Invoke(this, EventArgs.Empty);
+        menu.Items.Add(_exitItem);
 
         return menu;
     }
