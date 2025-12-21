@@ -25,6 +25,10 @@ public class GraphPanel : UserControl
     private readonly IUsageAggregator _aggregator;
     private readonly ISpeedFormatter _formatter;
     private readonly ILocalizationService _localization;
+    private double[] _timestamps = Array.Empty<double>();
+    private double[] _downloads = Array.Empty<double>();
+    private double[] _uploads = Array.Empty<double>();
+    private bool _isAutoScaling = false;
 
     public GraphPanel(IUsageAggregator aggregator, ISpeedFormatter formatter, ILocalizationService localization)
     {
@@ -41,8 +45,51 @@ public class GraphPanel : UserControl
             Dock = DockStyle.Fill
         };
 
+        // Subscribe to axes changed to auto-fit Y based on visible X range
+        _plot.Plot.RenderManager.AxisLimitsChanged += OnAxisLimitsChanged;
+
         // Add controls
         Controls.Add(_plot);
+    }
+
+    private void OnAxisLimitsChanged(object? sender, RenderDetails e)
+    {
+        // Prevent recursive calls
+        if (_isAutoScaling || _timestamps.Length == 0)
+            return;
+
+        // Get current X-axis limits
+        var xMin = _plot.Plot.Axes.Bottom.Range.Min;
+        var xMax = _plot.Plot.Axes.Bottom.Range.Max;
+
+        // Find data points within visible X range
+        double yMin = double.MaxValue;
+        double yMax = double.MinValue;
+
+        for (int i = 0; i < _timestamps.Length; i++)
+        {
+            if (_timestamps[i] >= xMin && _timestamps[i] <= xMax)
+            {
+                var download = _downloads[i];
+                var upload = _uploads[i];
+
+                if (download < yMin) yMin = download;
+                if (download > yMax) yMax = download;
+                if (upload < yMin) yMin = upload;
+                if (upload > yMax) yMax = upload;
+            }
+        }
+
+        if (yMin != double.MaxValue && yMax != double.MinValue)
+        {
+            // Add 10% padding
+            var padding = (yMax - yMin) * 0.1;
+            if (padding == 0) padding = 1;
+
+            _isAutoScaling = true;
+            _plot.Plot.Axes.Left.Range.Set(Math.Max(0, yMin - padding), yMax + padding);
+            _isAutoScaling = false;
+        }
     }
 
     public void RefreshStrings()
@@ -75,24 +122,28 @@ public class GraphPanel : UserControl
 
         if (dataPoints.Count == 0)
         {
+            _timestamps = Array.Empty<double>();
+            _downloads = Array.Empty<double>();
+            _uploads = Array.Empty<double>();
             _plot.Plot.Title(_localization.GetString("Graph_NoData"));
             _plot.Refresh();
             return;
         }
 
-        var timestamps = dataPoints.Select(d => d.Timestamp.ToOADate()).ToArray();
+        // Store data for Y-axis auto-scaling
+        _timestamps = dataPoints.Select(d => d.Timestamp.ToOADate()).ToArray();
         // Convert bytes to Mbps (bytes * 8 / 1,000,000)
-        var downloads = dataPoints.Select(d => (double)d.DownloadBytes * 8 / 1_000_000).ToArray();
-        var uploads = dataPoints.Select(d => (double)d.UploadBytes * 8 / 1_000_000).ToArray();
+        _downloads = dataPoints.Select(d => (double)d.DownloadBytes * 8 / 1_000_000).ToArray();
+        _uploads = dataPoints.Select(d => (double)d.UploadBytes * 8 / 1_000_000).ToArray();
 
         // Create scatter plots configured as line charts (no fill, no markers)
-        var downloadScatter = _plot.Plot.Add.Scatter(timestamps, downloads);
+        var downloadScatter = _plot.Plot.Add.Scatter(_timestamps, _downloads);
         downloadScatter.LegendText = _localization.GetString("Label_Download");
         downloadScatter.LineStyle.Color = ScottPlot.Color.FromHex("#4CAF50"); // Green
         downloadScatter.LineStyle.Width = 2;
         downloadScatter.MarkerStyle.IsVisible = false;
 
-        var uploadScatter = _plot.Plot.Add.Scatter(timestamps, uploads);
+        var uploadScatter = _plot.Plot.Add.Scatter(_timestamps, _uploads);
         uploadScatter.LegendText = _localization.GetString("Label_Upload");
         uploadScatter.LineStyle.Color = ScottPlot.Color.FromHex("#FF9800"); // Orange
         uploadScatter.LineStyle.Width = 2;
@@ -106,6 +157,9 @@ public class GraphPanel : UserControl
         _plot.Plot.Axes.Bottom.Label.Text = _localization.GetString("Graph_Time");
         _plot.Plot.Title(_localization.GetString("Graph_Title"));
         _plot.Plot.ShowLegend(Alignment.UpperRight);
+
+        // Initial auto-fit
+        _plot.Plot.Axes.AutoScale();
 
         _plot.Refresh();
     }
