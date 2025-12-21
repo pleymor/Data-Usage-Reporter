@@ -204,6 +204,9 @@
   <data name="Button_SaveSchedule" xml:space="preserve">
     <value>Enregistrer la planification</value>
   </data>
+  <data name="Schedule_SendImmediate" xml:space="preserve">
+    <value>Envoi immédiat</value>
+  </data>
 
   <!-- Credits/About Tab -->
   <data name="About_AppName" xml:space="preserve">
@@ -308,5 +311,35 @@
   </data>
   <data name="Email_ReportTitle" xml:space="preserve">
     <value>Rapport d'utilisation réseau - {0}</value>
+  </data>
+  <data name="Email_TableHeader_Date" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="Email_TableHeader_DownloadMB" xml:space="preserve">
+    <value>Téléchargement (Mo)</value>
+  </data>
+  <data name="Email_TableHeader_UploadMB" xml:space="preserve">
+    <value>Téléversement (Mo)</value>
+  </data>
+  <data name="Email_TableHeader_PeakDownload" xml:space="preserve">
+    <value>Pointe ↓ (Mbps)</value>
+  </data>
+  <data name="Email_TableHeader_PeakUpload" xml:space="preserve">
+    <value>Pointe ↑ (Mbps)</value>
+  </data>
+  <data name="Email_TableTotal" xml:space="preserve">
+    <value>Total</value>
+  </data>
+  <data name="Email_GraphHourly" xml:space="preserve">
+    <value>Utilisation horaire</value>
+  </data>
+  <data name="Email_GraphDaily" xml:space="preserve">
+    <value>Utilisation quotidienne</value>
+  </data>
+  <data name="Email_GraphWeekly" xml:space="preserve">
+    <value>Utilisation hebdomadaire</value>
+  </data>
+  <data name="Email_Week" xml:space="preserve">
+    <value>Semaine {0}</value>
   </data>
 </root>

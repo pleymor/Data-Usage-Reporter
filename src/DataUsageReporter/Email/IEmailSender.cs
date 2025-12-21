@@ -19,12 +19,13 @@ public interface IEmailSender
 }
 
 /// <summary>
-/// Email message content.
+/// Email message content with optional inline attachments.
 /// </summary>
 public record EmailMessage(
     string Subject,
     string HtmlBody,
-    string? PlainTextBody = null
+    string? PlainTextBody = null,
+    IReadOnlyList<InlineAttachment>? InlineAttachments = null
 );
 
 /// <summary>

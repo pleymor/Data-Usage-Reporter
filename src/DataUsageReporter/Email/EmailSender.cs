@@ -157,6 +157,19 @@ public class EmailSender : IEmailSender
             TextBody = message.PlainTextBody ?? StripHtml(message.HtmlBody)
         };
 
+        // Add inline attachments as LinkedResources for embedding images in HTML
+        if (message.InlineAttachments != null)
+        {
+            foreach (var attachment in message.InlineAttachments)
+            {
+                var resource = builder.LinkedResources.Add(
+                    attachment.FileName,
+                    attachment.Data,
+                    ContentType.Parse(attachment.MimeType));
+                resource.ContentId = attachment.ContentId;
+            }
+        }
+
         mimeMessage.Body = builder.ToMessageBody();
 
         return mimeMessage;

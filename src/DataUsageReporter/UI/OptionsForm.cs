@@ -41,7 +41,6 @@ public class OptionsForm : Form
     private TextBox? _passwordTextBox;
     private TextBox? _customSubjectTextBox;
     private Button? _testConnectionButton;
-    private Button? _sendNowButton;
     private Label? _testResultLabel;
 
     // SMTP presets: (Name, Server, Port, UseSsl)
@@ -64,6 +63,8 @@ public class OptionsForm : Form
     private ComboBox? _dayOfWeekComboBox;
     private NumericUpDown? _dayOfMonthInput;
     private Label? _nextRunLabel;
+    private Button? _sendImmediateButton;
+    private Label? _scheduleResultLabel;
 
     public OptionsForm(
         IUsageAggregator aggregator,
@@ -372,10 +373,6 @@ public class OptionsForm : Form
         _testConnectionButton.Click += OnTestConnectionClick;
         buttonsPanel.Controls.Add(_testConnectionButton);
 
-        _sendNowButton = new Button { Text = _localization.GetString("Email_SendNow"), Width = 140, Margin = new Padding(0, 0, 5, 0) };
-        _sendNowButton.Click += OnSendNowClick;
-        buttonsPanel.Controls.Add(_sendNowButton);
-
         var saveButton = new Button { Text = _localization.GetString("Email_SaveSettings"), Width = 100 };
         saveButton.Click += OnSaveEmailSettingsClick;
         buttonsPanel.Controls.Add(saveButton);
@@ -491,10 +488,25 @@ public class OptionsForm : Form
         _nextRunLabel = new Label { Text = _localization.GetString("Schedule_NotScheduled"), AutoSize = true };
         layout.Controls.Add(_nextRunLabel, 1, row++);
 
-        // Save button
-        var saveButton = new Button { Text = _localization.GetString("Button_SaveSchedule"), Width = 160 };
+        // Buttons panel
+        var buttonsPanel = new FlowLayoutPanel { AutoSize = true, FlowDirection = FlowDirection.LeftToRight };
+
+        var saveButton = new Button { Text = _localization.GetString("Button_SaveSchedule"), Width = 160, Margin = new Padding(0, 0, 10, 0) };
         saveButton.Click += OnSaveScheduleClick;
-        layout.Controls.Add(saveButton, 0, row);
+        buttonsPanel.Controls.Add(saveButton);
+
+        _sendImmediateButton = new Button { Text = _localization.GetString("Schedule_SendImmediate"), Width = 140 };
+        _sendImmediateButton.Click += OnSendImmediateClick;
+        buttonsPanel.Controls.Add(_sendImmediateButton);
+
+        layout.Controls.Add(buttonsPanel, 0, row);
+        layout.SetColumnSpan(buttonsPanel, 2);
+        row++;
+
+        // Result label for send feedback
+        _scheduleResultLabel = new Label { Text = "", AutoSize = true, ForeColor = Color.Gray };
+        layout.Controls.Add(_scheduleResultLabel, 0, row);
+        layout.SetColumnSpan(_scheduleResultLabel, 2);
 
         panel.Controls.Add(layout);
 
@@ -617,50 +629,57 @@ public class OptionsForm : Form
         }
     }
 
-    private async void OnSendNowClick(object? sender, EventArgs e)
+    private async void OnSendImmediateClick(object? sender, EventArgs e)
     {
-        // Validate recipient email
-        if (string.IsNullOrWhiteSpace(_recipientEmailTextBox?.Text))
+        // Get selected frequency from combo box
+        var frequency = (ReportFrequency)(_frequencyComboBox?.SelectedIndex ?? 0);
+
+        // Validate email config exists
+        var config = _settingsRepository.LoadEmailConfig();
+        if (config == null || string.IsNullOrWhiteSpace(config.RecipientEmail))
         {
-            _testResultLabel!.Text = "Recipient email is required";
-            _testResultLabel.ForeColor = Color.Red;
+            _scheduleResultLabel!.Text = "Configure email settings first";
+            _scheduleResultLabel.ForeColor = Color.Red;
             return;
         }
 
-        _sendNowButton!.Enabled = false;
-        _testResultLabel!.Text = _localization.GetString("Email_GeneratingReport");
-        _testResultLabel.ForeColor = Color.Gray;
+        _sendImmediateButton!.Enabled = false;
+        _scheduleResultLabel!.Text = _localization.GetString("Email_GeneratingReport");
+        _scheduleResultLabel.ForeColor = Color.Gray;
 
         try
         {
-            // Save settings first
-            SaveEmailSettingsInternal();
-
-            // Create email sender with current config
-            var config = _settingsRepository.LoadEmailConfig();
-            if (config == null)
-            {
-                _testResultLabel.Text = "Failed to load email config";
-                _testResultLabel.ForeColor = Color.Red;
-                return;
-            }
-
             var emailSender = new EmailSender(config, _credentialManager);
 
-            // Generate report for last 24 hours
             if (_usageRepository == null)
             {
-                _testResultLabel.Text = "Usage repository not available";
-                _testResultLabel.ForeColor = Color.Red;
+                _scheduleResultLabel.Text = "Usage repository not available";
+                _scheduleResultLabel.ForeColor = Color.Red;
                 return;
             }
 
-            var reportGenerator = new ReportGenerator(_usageRepository, _usageAggregator, _speedFormatter, _localization);
+            // Calculate period based on frequency
             var now = DateTime.Now;
-            var todayStart = now.Date; // Midnight today
-            var report = await reportGenerator.GenerateReportAsync(todayStart, now, ReportFrequency.Daily, config.CustomSubject);
+            DateTime periodStart;
+            switch (frequency)
+            {
+                case ReportFrequency.Weekly:
+                    periodStart = now.Date.AddDays(-7);
+                    break;
+                case ReportFrequency.Monthly:
+                    periodStart = now.Date.AddDays(-31);
+                    break;
+                case ReportFrequency.Daily:
+                default:
+                    periodStart = now.Date;
+                    break;
+            }
 
-            _testResultLabel.Text = _localization.GetString("Email_SendingEmail");
+            var graphRenderer = new EmailReportGraphRenderer(_localization);
+            var reportGenerator = new ReportGenerator(_usageRepository, _usageAggregator, _speedFormatter, _localization, graphRenderer);
+            var report = await reportGenerator.GenerateReportAsync(periodStart, now, frequency, config.CustomSubject);
+
+            _scheduleResultLabel.Text = _localization.GetString("Email_SendingEmail");
 
             // Send with timeout (60 seconds)
             var sendTask = emailSender.SendWithDetailsAsync(report);
@@ -669,8 +688,8 @@ public class OptionsForm : Form
 
             if (completedTask == timeoutTask)
             {
-                _testResultLabel.Text = "Timeout: Email send took too long. Your ISP may block port 25. Configure SMTP relay.";
-                _testResultLabel.ForeColor = Color.Red;
+                _scheduleResultLabel.Text = "Timeout: Email send took too long. Your ISP may block port 25. Configure SMTP relay.";
+                _scheduleResultLabel.ForeColor = Color.Red;
                 return;
             }
 
@@ -678,23 +697,23 @@ public class OptionsForm : Form
 
             if (success)
             {
-                _testResultLabel.Text = _localization.GetString("Email_ReportSentSuccess");
-                _testResultLabel.ForeColor = Color.Green;
+                _scheduleResultLabel.Text = _localization.GetString("Email_ReportSentSuccess");
+                _scheduleResultLabel.ForeColor = Color.Green;
             }
             else
             {
-                _testResultLabel.Text = $"Failed: {errorMessage ?? "Unknown error. Configure SMTP relay."}";
-                _testResultLabel.ForeColor = Color.Red;
+                _scheduleResultLabel.Text = $"Failed: {errorMessage ?? "Unknown error. Configure SMTP relay."}";
+                _scheduleResultLabel.ForeColor = Color.Red;
             }
         }
         catch (Exception ex)
         {
-            _testResultLabel.Text = $"Error: {ex.Message}";
-            _testResultLabel.ForeColor = Color.Red;
+            _scheduleResultLabel.Text = $"Error: {ex.Message}";
+            _scheduleResultLabel.ForeColor = Color.Red;
         }
         finally
         {
-            _sendNowButton.Enabled = true;
+            _sendImmediateButton.Enabled = true;
         }
     }
 
