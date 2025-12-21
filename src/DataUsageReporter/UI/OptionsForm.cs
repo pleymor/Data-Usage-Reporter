@@ -95,6 +95,13 @@ public class OptionsForm : Form
         StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(600, 400);
 
+        // Set form icon
+        var iconPath = Path.Combine(AppContext.BaseDirectory, "Resources", "app.ico");
+        if (File.Exists(iconPath))
+        {
+            Icon = new Icon(iconPath);
+        }
+
         // Create tab control
         _tabControl = new TabControl
         {
