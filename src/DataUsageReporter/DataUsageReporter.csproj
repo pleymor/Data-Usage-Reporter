@@ -33,4 +33,10 @@
     <PackageReference Include="Vanara.PInvoke.IpHlpApi" Version="4.2.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="Resources\app.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
