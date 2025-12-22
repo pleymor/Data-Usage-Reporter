@@ -33,6 +33,12 @@ public class GraphPanel : UserControl
     private readonly List<VerticalSpan> _timeSpans = new();
     private readonly List<VerticalLine> _timeLines = new();
     private DisplayGranularity _currentGranularity = DisplayGranularity.Hour;
+    private double _lastXMin = 0;
+    private double _lastXMax = 0;
+    private double _lastTickSpan = 0;
+    private System.Windows.Forms.Timer? _tickDebounceTimer;
+    private double _pendingXMin = 0;
+    private double _pendingXMax = 0;
 
     private enum DisplayGranularity { Day, Hour, Minute, Second }
 
@@ -97,11 +103,58 @@ public class GraphPanel : UserControl
             _isAutoScaling = false;
         }
 
-        // Update time separators based on zoom level
-        UpdateTimeSeparators(xMin, xMax);
+        // Check if zoom level changed significantly
+        var currentSpan = xMax - xMin;
+        var spanChange = Math.Abs(currentSpan - _lastTickSpan) / Math.Max(0.001, _lastTickSpan);
 
-        // Update X-axis tick format based on zoom level
-        UpdateAxisTickFormat(xMin, xMax);
+        if (spanChange >= 0.1 || _lastTickSpan == 0)
+        {
+            // Zoom changed - update immediately
+            _lastTickSpan = currentSpan;
+            UpdateTimeSeparators(xMin, xMax);
+            RegenerateAxisTicks(xMin, xMax);
+        }
+        else
+        {
+            // Just panning - debounce updates
+            _pendingXMin = xMin;
+            _pendingXMax = xMax;
+
+            if (_tickDebounceTimer == null)
+            {
+                _tickDebounceTimer = new System.Windows.Forms.Timer { Interval = 200 };
+                _tickDebounceTimer.Tick += OnTickDebounce;
+            }
+            _tickDebounceTimer.Stop();
+            _tickDebounceTimer.Start();
+        }
+
+        // Always update the date label immediately
+        UpdateDateLabel(xMin, xMax);
+    }
+
+    private void UpdateDateLabel(double xMin, double xMax)
+    {
+        try
+        {
+            var minDate = DateTime.FromOADate(xMin);
+            var maxDate = DateTime.FromOADate(xMax);
+
+            string dateLabel;
+            if (minDate.Date == maxDate.Date)
+            {
+                dateLabel = minDate.ToString("dddd dd MMM yyyy");
+            }
+            else
+            {
+                dateLabel = $"{minDate:dd MMM} - {maxDate:dd MMM yyyy}";
+            }
+            _plot.Plot.Axes.Bottom.Label.Text = dateLabel;
+        }
+        catch
+        {
+            // Ignore formatting errors
+        }
     }
 
     private DisplayGranularity DetermineGranularity(double xMin, double xMax)
@@ -136,11 +189,14 @@ public class GraphPanel : UserControl
 
             var newGranularity = DetermineGranularity(xMin, xMax);
 
-            // Only rebuild if granularity changed
-            if (newGranularity == _currentGranularity && _timeSpans.Count > 0)
+            // Rebuild if granularity changed OR view shifted significantly
+            bool viewChanged = Math.Abs(xMin - _lastXMin) > 0.001 || Math.Abs(xMax - _lastXMax) > 0.001;
+            if (newGranularity == _currentGranularity && !viewChanged && _timeSpans.Count > 0)
                 return;
 
             _currentGranularity = newGranularity;
+            _lastXMin = xMin;
+            _lastXMax = xMax;
 
             // Remove existing spans and lines
             foreach (var span in _timeSpans)
@@ -234,27 +290,33 @@ public class GraphPanel : UserControl
         }
     }
 
-    private void UpdateAxisTickFormat(double xMin, double xMax)
+    private void OnTickDebounce(object? sender, EventArgs e)
+    {
+        _tickDebounceTimer?.Stop();
+        UpdateTimeSeparators(_pendingXMin, _pendingXMax);
+        RegenerateAxisTicks(_pendingXMin, _pendingXMax);
+        _plot.Refresh();
+    }
+
+    private void RegenerateAxisTicks(double xMin, double xMax)
     {
         try
         {
-            var granularity = DetermineGranularity(xMin, xMax);
             var minDate = DateTime.FromOADate(xMin);
             var maxDate = DateTime.FromOADate(xMax);
+            var granularity = DetermineGranularity(xMin, xMax);
 
-            // Update X-axis label with date range
-            string dateLabel;
-            if (minDate.Date == maxDate.Date)
-            {
-                dateLabel = minDate.ToString("dddd dd MMM yyyy");
-            }
-            else
-            {
-                dateLabel = $"{minDate:dd MMM} - {maxDate:dd MMM yyyy}";
-            }
-            _plot.Plot.Axes.Bottom.Label.Text = dateLabel;
+            // Get tick boundaries at round time values
+            var tickBoundaries = GetTimeBoundaries(minDate, maxDate, granularity);
 
-            // Simple time format for ticks
+            // Calculate max ticks based on plot width to avoid label overlap
+            int plotWidth = Math.Max(100, _plot.Width);
+            int maxTicks = Math.Max(3, plotWidth / 60);
+            int step = Math.Max(1, tickBoundaries.Count / maxTicks);
+
+            var tickPositions = new List<double>();
+            var tickLabels = new List<string>();
+
             string format = granularity switch
             {
                 DisplayGranularity.Day => "dd MMM",
@@ -264,10 +326,19 @@ public class GraphPanel : UserControl
                 _ => "HH:mm"
             };
 
-            _plot.Plot.Axes.Bottom.TickGenerator = new ScottPlot.TickGenerators.NumericAutomatic
+            for (int i = 0; i < tickBoundaries.Count; i += step)
             {
-                LabelFormatter = d => DateTime.FromOADate(d).ToString(format)
-            };
+                tickPositions.Add(tickBoundaries[i].ToOADate());
+                tickLabels.Add(tickBoundaries[i].ToString(format));
+            }
+
+            if (tickPositions.Count > 0)
+            {
+                _plot.Plot.Axes.Bottom.TickGenerator = new ScottPlot.TickGenerators.NumericManual(
+                    tickPositions.ToArray(),
+                    tickLabels.ToArray()
+                );
+            }
         }
         catch
         {
@@ -364,9 +435,7 @@ public class GraphPanel : UserControl
         uploadScatter.LineStyle.Width = 2;
         uploadScatter.MarkerStyle.IsVisible = false;
 
-        // Configure axes (custom tick format set in UpdateAxisTickFormat)
-
-        // Format Y axis label (X-axis label set dynamically in UpdateAxisTickFormat)
+        // Format Y axis label
         _plot.Plot.Axes.Left.Label.Text = _localization.GetString("Graph_Mbps");
         _plot.Plot.Title(_localization.GetString("Graph_Title"));
         _plot.Plot.ShowLegend(Alignment.UpperRight);
@@ -379,8 +448,10 @@ public class GraphPanel : UserControl
 
         // Draw initial time separators and set tick format
         _currentGranularity = (DisplayGranularity)(-1); // Force redraw
+        _lastTickSpan = 0; // Force tick regeneration
         UpdateTimeSeparators(today.ToOADate(), tomorrow.ToOADate());
-        UpdateAxisTickFormat(today.ToOADate(), tomorrow.ToOADate());
+        RegenerateAxisTicks(today.ToOADate(), tomorrow.ToOADate());
+        UpdateDateLabel(today.ToOADate(), tomorrow.ToOADate());
 
         _plot.Refresh();
     }
@@ -389,6 +460,15 @@ public class GraphPanel : UserControl
     {
         if (disposing)
         {
+            // Dispose debounce timer
+            if (_tickDebounceTimer != null)
+            {
+                _tickDebounceTimer.Stop();
+                _tickDebounceTimer.Tick -= OnTickDebounce;
+                _tickDebounceTimer.Dispose();
+                _tickDebounceTimer = null;
+            }
+
             // Unsubscribe from events to prevent memory leaks
             if (_plot?.Plot?.RenderManager != null)
             {
