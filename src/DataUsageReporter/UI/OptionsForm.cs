@@ -166,14 +166,14 @@ public class OptionsForm : Form
         // Rebuild Settings tab
         if (_settingsTab != null)
         {
-            _settingsTab.Controls.Clear();
+            DisposeTabControls(_settingsTab);
             _settingsTab.Controls.Add(CreateSettingsPanel());
         }
 
         // Rebuild Email tab
         if (_emailTab != null)
         {
-            _emailTab.Controls.Clear();
+            DisposeTabControls(_emailTab);
             _emailTab.Controls.Add(CreateEmailSettingsPanel());
             LoadEmailSettings();
         }
@@ -181,7 +181,7 @@ public class OptionsForm : Form
         // Rebuild Schedule tab
         if (_scheduleTab != null)
         {
-            _scheduleTab.Controls.Clear();
+            DisposeTabControls(_scheduleTab);
             _scheduleTab.Controls.Add(CreateSchedulePanel());
             LoadScheduleSettings();
         }
@@ -189,8 +189,18 @@ public class OptionsForm : Form
         // Rebuild About tab
         if (_aboutTab != null)
         {
-            _aboutTab.Controls.Clear();
+            DisposeTabControls(_aboutTab);
             _aboutTab.Controls.Add(CreateAboutPanel());
+        }
+    }
+
+    private static void DisposeTabControls(TabPage tab)
+    {
+        while (tab.Controls.Count > 0)
+        {
+            var control = tab.Controls[0];
+            tab.Controls.RemoveAt(0);
+            control.Dispose();
         }
     }
 
