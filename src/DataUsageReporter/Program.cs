@@ -193,6 +193,8 @@ static class Program
         }
     }
 
+    private static int _tickCount = 0;
+
     private static void OnMonitorTick(object? sender, EventArgs e)
     {
         if (_networkMonitor == null || _trayIcon == null || _usageRepository == null)
@@ -200,20 +202,29 @@ static class Program
 
         try
         {
-            // Get current speed and update tray icon and overlay
+            // Periodic GC to prevent memory buildup (every 60 seconds)
+            _tickCount++;
+            if (_tickCount % 60 == 0)
+            {
+                GC.Collect(0, GCCollectionMode.Optimized);
+            }
+
+            // Get current speed (this fetches stats internally and updates state)
             var speed = _networkMonitor.GetCurrentSpeed();
             _trayIcon.UpdateSpeed(speed);
             _speedOverlay?.UpdateSpeed(speed);
 
-            // Get current stats and save to database
-            var stats = _networkMonitor.GetCurrentStats();
-            var record = new UsageRecord(
-                DateTime.Now,
-                stats.TotalBytesReceived,
-                stats.TotalBytesSent);
+            // Use LastStats to get the already-fetched data (no double-fetch)
+            var stats = _networkMonitor.LastStats;
+            if (stats != null)
+            {
+                var record = new UsageRecord(
+                    DateTime.Now,
+                    stats.TotalBytesReceived,
+                    stats.TotalBytesSent);
 
-            // Fire and forget - don't block the UI thread
-            _ = _usageRepository.SaveRecordAsync(record);
+                _usageRepository.SaveRecordAsync(record).GetAwaiter().GetResult();
+            }
         }
         catch (Exception ex)
         {

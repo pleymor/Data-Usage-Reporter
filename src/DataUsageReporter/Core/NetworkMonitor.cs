@@ -13,6 +13,12 @@ public class NetworkMonitor : INetworkMonitor
     private NetworkStats? _currentStats;
     private readonly object _lock = new();
 
+    /// <summary>
+    /// Gets the last captured stats without fetching new data.
+    /// Use this after calling GetCurrentSpeed() to avoid double-fetching.
+    /// </summary>
+    public NetworkStats? LastStats => _currentStats;
+
     public NetworkStats GetCurrentStats()
     {
         lock (_lock)
