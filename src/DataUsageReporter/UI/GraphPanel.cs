@@ -106,12 +106,22 @@ public class GraphPanel : UserControl
 
     public async Task RefreshDataAsync()
     {
-        // Fetch all data (up to 5 years back covers all retained data)
-        var from = DateTime.Now.AddYears(-5);
         var to = DateTime.Now;
+        var dataPoints = new List<UsageDataPoint>();
 
-        // Use Hour granularity to show all historical data from usage_summaries
-        var dataPoints = await _aggregator.GetDataPointsAsync(from, to, TimeGranularity.Hour);
+        // Get historical hourly summaries (older than 24 hours)
+        var historyFrom = DateTime.Now.AddYears(-5);
+        var historyTo = DateTime.Now.AddHours(-24);
+        var historicalPoints = await _aggregator.GetDataPointsAsync(historyFrom, historyTo, TimeGranularity.Hour);
+        dataPoints.AddRange(historicalPoints);
+
+        // Get raw second-by-second data for recent period (last 24 hours)
+        var recentFrom = DateTime.Now.AddHours(-24);
+        var recentPoints = await _aggregator.GetDataPointsAsync(recentFrom, to, TimeGranularity.Minute);
+        dataPoints.AddRange(recentPoints);
+
+        // Sort by timestamp
+        dataPoints.Sort((a, b) => a.Timestamp.CompareTo(b.Timestamp));
 
         UpdatePlot(dataPoints);
     }
