@@ -342,4 +342,50 @@
   <data name="Email_Week" xml:space="preserve">
     <value>Semaine {0}</value>
   </data>
+
+  <!-- Day Names -->
+  <data name="Day_Sunday" xml:space="preserve">
+    <value>Dimanche</value>
+  </data>
+  <data name="Day_Monday" xml:space="preserve">
+    <value>Lundi</value>
+  </data>
+  <data name="Day_Tuesday" xml:space="preserve">
+    <value>Mardi</value>
+  </data>
+  <data name="Day_Wednesday" xml:space="preserve">
+    <value>Mercredi</value>
+  </data>
+  <data name="Day_Thursday" xml:space="preserve">
+    <value>Jeudi</value>
+  </data>
+  <data name="Day_Friday" xml:space="preserve">
+    <value>Vendredi</value>
+  </data>
+  <data name="Day_Saturday" xml:space="preserve">
+    <value>Samedi</value>
+  </data>
+
+  <!-- Error Messages -->
+  <data name="Error_EmailNotConfigured" xml:space="preserve">
+    <value>Expéditeur de courriel non configuré</value>
+  </data>
+  <data name="Error_ConfigureEmailFirst" xml:space="preserve">
+    <value>Configurez d'abord les paramètres de messagerie</value>
+  </data>
+  <data name="Error_RepositoryNotAvailable" xml:space="preserve">
+    <value>Référentiel de données non disponible</value>
+  </data>
+  <data name="Error_Timeout" xml:space="preserve">
+    <value>Délai dépassé : L'envoi a pris trop de temps. Votre FAI bloque peut-être le port 25. Configurez un relais SMTP.</value>
+  </data>
+  <data name="Error_UnknownSmtp" xml:space="preserve">
+    <value>Erreur inconnue. Configurez un relais SMTP.</value>
+  </data>
+  <data name="Error_Failed" xml:space="preserve">
+    <value>Échec : {0}</value>
+  </data>
+  <data name="Error_Generic" xml:space="preserve">
+    <value>Erreur : {0}</value>
+  </data>
 </root>

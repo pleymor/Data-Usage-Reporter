@@ -481,7 +481,15 @@ public class OptionsForm : Form
         // Day of week (for weekly)
         layout.Controls.Add(new Label { Text = _localization.GetString("Schedule_DayOfWeek") + ":", AutoSize = true }, 0, row);
         _dayOfWeekComboBox = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 150 };
-        _dayOfWeekComboBox.Items.AddRange(new object[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" });
+        _dayOfWeekComboBox.Items.AddRange(new object[] {
+            _localization.GetString("Day_Sunday"),
+            _localization.GetString("Day_Monday"),
+            _localization.GetString("Day_Tuesday"),
+            _localization.GetString("Day_Wednesday"),
+            _localization.GetString("Day_Thursday"),
+            _localization.GetString("Day_Friday"),
+            _localization.GetString("Day_Saturday")
+        });
         _dayOfWeekComboBox.SelectedIndex = 1;
         layout.Controls.Add(_dayOfWeekComboBox, 1, row++);
 
@@ -599,7 +607,7 @@ public class OptionsForm : Form
     {
         if (_emailSender == null)
         {
-            _testResultLabel!.Text = "Email sender not configured";
+            _testResultLabel!.Text = _localization.GetString("Error_EmailNotConfigured");
             _testResultLabel.ForeColor = Color.Red;
             return;
         }
@@ -621,13 +629,13 @@ public class OptionsForm : Form
             }
             else
             {
-                _testResultLabel.Text = $"Failed: {result.ErrorMessage}";
+                _testResultLabel.Text = _localization.GetString("Error_Failed", result.ErrorMessage ?? "");
                 _testResultLabel.ForeColor = Color.Red;
             }
         }
         catch (Exception ex)
         {
-            _testResultLabel.Text = $"Error: {ex.Message}";
+            _testResultLabel.Text = _localization.GetString("Error_Generic", ex.Message);
             _testResultLabel.ForeColor = Color.Red;
         }
         finally
@@ -645,7 +653,7 @@ public class OptionsForm : Form
         var config = _settingsRepository.LoadEmailConfig();
         if (config == null || string.IsNullOrWhiteSpace(config.RecipientEmail))
         {
-            _scheduleResultLabel!.Text = "Configure email settings first";
+            _scheduleResultLabel!.Text = _localization.GetString("Error_ConfigureEmailFirst");
             _scheduleResultLabel.ForeColor = Color.Red;
             return;
         }
@@ -660,7 +668,7 @@ public class OptionsForm : Form
 
             if (_usageRepository == null)
             {
-                _scheduleResultLabel.Text = "Usage repository not available";
+                _scheduleResultLabel.Text = _localization.GetString("Error_RepositoryNotAvailable");
                 _scheduleResultLabel.ForeColor = Color.Red;
                 return;
             }
@@ -695,7 +703,7 @@ public class OptionsForm : Form
 
             if (completedTask == timeoutTask)
             {
-                _scheduleResultLabel.Text = "Timeout: Email send took too long. Your ISP may block port 25. Configure SMTP relay.";
+                _scheduleResultLabel.Text = _localization.GetString("Error_Timeout");
                 _scheduleResultLabel.ForeColor = Color.Red;
                 return;
             }
@@ -709,13 +717,13 @@ public class OptionsForm : Form
             }
             else
             {
-                _scheduleResultLabel.Text = $"Failed: {errorMessage ?? "Unknown error. Configure SMTP relay."}";
+                _scheduleResultLabel.Text = _localization.GetString("Error_Failed", errorMessage ?? _localization.GetString("Error_UnknownSmtp"));
                 _scheduleResultLabel.ForeColor = Color.Red;
             }
         }
         catch (Exception ex)
         {
-            _scheduleResultLabel.Text = $"Error: {ex.Message}";
+            _scheduleResultLabel.Text = _localization.GetString("Error_Generic", ex.Message);
             _scheduleResultLabel.ForeColor = Color.Red;
         }
         finally
@@ -781,7 +789,7 @@ public class OptionsForm : Form
     {
         if (!schedule.IsEnabled)
         {
-            _nextRunLabel!.Text = "Not scheduled";
+            _nextRunLabel!.Text = _localization.GetString("Schedule_NotScheduled");
         }
         else
         {
