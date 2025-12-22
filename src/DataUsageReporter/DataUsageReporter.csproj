@@ -19,7 +19,7 @@
     <!-- Application info -->
     <AssemblyName>DataUsageReporter</AssemblyName>
     <RootNamespace>DataUsageReporter</RootNamespace>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
     <Company>DataUsageReporter</Company>
     <Product>Data Usage Reporter</Product>
     <Description>Network usage monitoring application for Windows</Description>

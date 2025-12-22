@@ -867,9 +867,11 @@ public class OptionsForm : Form
         layout.Controls.Add(appNameLabel);
 
         // Version
+        var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+        var versionString = version != null ? $"{version.Major}.{version.Minor}.{version.Build}" : "1.0.0";
         var versionLabel = new Label
         {
-            Text = _localization.GetString("About_Version", "1.0.0"),
+            Text = _localization.GetString("About_Version", versionString),
             AutoSize = true,
             Padding = new Padding(0, 0, 0, 5)
         };
