@@ -162,6 +162,36 @@ public class OptionsForm : Form
 
         // Refresh graph panel
         _graphPanel.RefreshStrings();
+
+        // Rebuild Settings tab
+        if (_settingsTab != null)
+        {
+            _settingsTab.Controls.Clear();
+            _settingsTab.Controls.Add(CreateSettingsPanel());
+        }
+
+        // Rebuild Email tab
+        if (_emailTab != null)
+        {
+            _emailTab.Controls.Clear();
+            _emailTab.Controls.Add(CreateEmailSettingsPanel());
+            LoadEmailSettings();
+        }
+
+        // Rebuild Schedule tab
+        if (_scheduleTab != null)
+        {
+            _scheduleTab.Controls.Clear();
+            _scheduleTab.Controls.Add(CreateSchedulePanel());
+            LoadScheduleSettings();
+        }
+
+        // Rebuild About tab
+        if (_aboutTab != null)
+        {
+            _aboutTab.Controls.Clear();
+            _aboutTab.Controls.Add(CreateAboutPanel());
+        }
     }
 
     private Panel CreateSettingsPanel()
