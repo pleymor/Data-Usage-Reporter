@@ -173,6 +173,12 @@ public class SpeedOverlay : Form
 
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
+        // Unsubscribe from events to prevent memory leaks
+        MouseDown -= OnMouseDown;
+        _uploadLabel.MouseDown -= OnMouseDown;
+        _downloadLabel.MouseDown -= OnMouseDown;
+        _keepOnTopTimer.Tick -= OnKeepOnTopTick;
+
         _keepOnTopTimer.Stop();
         _keepOnTopTimer.Dispose();
         base.OnFormClosing(e);

@@ -163,4 +163,17 @@ public class GraphPanel : UserControl
 
         _plot.Refresh();
     }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            // Unsubscribe from events to prevent memory leaks
+            if (_plot?.Plot?.RenderManager != null)
+            {
+                _plot.Plot.RenderManager.AxisLimitsChanged -= OnAxisLimitsChanged;
+            }
+        }
+        base.Dispose(disposing);
+    }
 }

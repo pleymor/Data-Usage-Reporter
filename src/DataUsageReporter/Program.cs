@@ -347,7 +347,12 @@ static class Program
         _aggregationTimer?.Dispose();
         _aggregationTimer = null;
 
-        _reportScheduler?.Stop();
+        // Unsubscribe from scheduler events before stopping
+        if (_reportScheduler != null)
+        {
+            _reportScheduler.ReportCompleted -= OnReportCompleted;
+            _reportScheduler.Stop();
+        }
 
         _optionsForm?.Dispose();
         _optionsForm = null;
@@ -356,8 +361,14 @@ static class Program
         _speedOverlay?.Dispose();
         _speedOverlay = null;
 
-        _trayIcon?.Dispose();
-        _trayIcon = null;
+        // Unsubscribe from tray icon events before disposing
+        if (_trayIcon != null)
+        {
+            _trayIcon.ExitRequested -= OnExitRequested;
+            _trayIcon.OptionsRequested -= OnOptionsRequested;
+            _trayIcon.Dispose();
+            _trayIcon = null;
+        }
 
         _mutex?.ReleaseMutex();
         _mutex?.Dispose();

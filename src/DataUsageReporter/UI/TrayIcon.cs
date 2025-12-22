@@ -13,6 +13,7 @@ public class TrayIcon : ITrayIcon
     private readonly NotifyIcon _notifyIcon;
     private readonly SpeedDisplay _speedDisplay;
     private readonly ILocalizationService _localization;
+    private readonly Icon? _appIcon;
     private ToolStripMenuItem? _optionsItem;
     private ToolStripMenuItem? _exitItem;
     private bool _disposed;
@@ -24,10 +25,11 @@ public class TrayIcon : ITrayIcon
     {
         _speedDisplay = new SpeedDisplay(formatter);
         _localization = localization;
+        _appIcon = LoadApplicationIcon();
 
         _notifyIcon = new NotifyIcon
         {
-            Icon = LoadApplicationIcon(),
+            Icon = _appIcon,
             Visible = true,
             Text = "Data Usage Reporter\nStarting...",
             ContextMenuStrip = CreateContextMenu()
@@ -123,8 +125,18 @@ public class TrayIcon : ITrayIcon
         if (_disposed) return;
         _disposed = true;
 
+        // Unsubscribe from events
+        _localization.LanguageChanged -= OnLanguageChanged;
+
         _notifyIcon.Visible = false;
+        _notifyIcon.ContextMenuStrip?.Dispose();
         _notifyIcon.Dispose();
+
+        // Dispose icon if it's not a system icon
+        if (_appIcon != null && _appIcon != SystemIcons.Application)
+        {
+            _appIcon.Dispose();
+        }
 
         GC.SuppressFinalize(this);
     }

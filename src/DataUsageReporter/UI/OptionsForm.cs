@@ -957,6 +957,16 @@ public class OptionsForm : Form
         base.OnFormClosing(e);
     }
 
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            // Unsubscribe from events to prevent memory leaks
+            _localization.LanguageChanged -= OnLanguageChanged;
+        }
+        base.Dispose(disposing);
+    }
+
     public void RefreshGraph()
     {
         _ = _graphPanel.RefreshDataAsync();
