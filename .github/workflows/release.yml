@@ -1,0 +1,74 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      # T003: Checkout source code
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for release notes
+
+      # T004: Setup .NET SDK
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # T005: Extract version from tag (strip 'v' prefix)
+      - name: Extract version
+        id: version
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      # T006 & T010: Build self-contained single-file executable with version
+      - name: Build
+        run: |
+          dotnet publish src/DataUsageReporter/DataUsageReporter.csproj `
+            -c Release `
+            -r win-x64 `
+            -p:Version=${{ steps.version.outputs.version }} `
+            --self-contained true `
+            -p:PublishSingleFile=true
+
+      # T007: Rename artifact to naming convention
+      - name: Rename artifact
+        shell: bash
+        run: |
+          mv "src/DataUsageReporter/bin/Release/net8.0-windows/win-x64/publish/DataUsageReporter.exe" \
+             "src/DataUsageReporter/bin/Release/net8.0-windows/win-x64/publish/DataUsageReporter-${{ steps.version.outputs.version }}-win-x64.exe"
+
+      # T008: Detect pre-release (alpha, beta, rc)
+      - name: Check pre-release
+        id: prerelease
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if [[ "$VERSION" == *"-alpha"* ]] || [[ "$VERSION" == *"-beta"* ]] || [[ "$VERSION" == *"-rc"* ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
+      # T009: Create GitHub release with auto-generated notes
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          prerelease: ${{ steps.prerelease.outputs.is_prerelease == 'true' }}
+          files: |
+            src/DataUsageReporter/bin/Release/net8.0-windows/win-x64/publish/DataUsageReporter-${{ steps.version.outputs.version }}-win-x64.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
